@@ -1,5 +1,5 @@
 
-<img src="./images/capture.png" alt="BearOS - The best OS Kernel" width="200px" height="200px" />
+<img src="./images/capture.png" alt="BearOS - The best OS Kernel" width="300px" />
 
 
 
