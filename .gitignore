@@ -1,0 +1,7 @@
+#builder
+kasm.o
+kc.o
+kernel
+BearOS.iso
+disk.img
+old.c
