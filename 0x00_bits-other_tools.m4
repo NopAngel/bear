@@ -1,3 +1,5 @@
+dnl What is this file for?
+dnl Well, this is a file that helps me "simulate" the kernel. It's a tool I created myself and wanted to share with others.
 dnl ============================================================================
 dnl Simulated System - Extended Version
 dnl ============================================================================
