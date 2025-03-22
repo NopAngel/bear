@@ -2,7 +2,7 @@ BearOS kernel
 ===============
 
 BearOS, an ``x86-64-bit`` kernel.
-Please read the ``sr/RQ.md``, it shows the minimum and maximum requirements for the kernel.
+Please read the ``sr/REQ.md``, it shows the minimum and maximum requirements for the kernel.
 If you want to contribute, you can read the ``LICENSE.md`` file, where the license topic is located.
 
 Something important to clarify is that all (or most) of the file comments are in Spanish, so you can use your trusted translator to read the code perfectly.
