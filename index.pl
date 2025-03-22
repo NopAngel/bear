@@ -1,0 +1,5 @@
+print("BEAROS")
+print("V1")
+print("BETA")
+print("KERNEL")
+print("(V1 - COMPLETE VERSION, NOT ALPHA)")

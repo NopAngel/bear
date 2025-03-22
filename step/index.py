@@ -1,0 +1,3 @@
+import plataform
+
+print(plataform)
