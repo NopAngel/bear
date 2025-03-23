@@ -24,7 +24,14 @@
 // because it does its job, it'll be fast, it'll work well, and nothing else. I just wanted to put this out there.
 
 
+#define MAX_NAME_LENGTH 256
+#define MAX_CONTENT_LENGTH 1024
+int cursor_x = 0;      // Posición horizontal del cursor
+int cursor_y = 0;      // Posición vertical del cursor
+int input_index = 0;            // Índice para el buffer de entrada
 
+// Variable para evitar múltiples lecturas del mismo scancode
+volatile unsigned char last_scancode = 0;
 
 int LOGIN = 1;
 void k_clear_screen();
@@ -538,6 +545,15 @@ int strncmp(const char *str1, const char *str2, unsigned int n) {
     return *(unsigned char *)str1 - *(unsigned char *)str2;
 }
 
+int custom_strcmp(const char *str1, const char *str2) {
+    while (*str1 && (*str1 == *str2)) {
+        str1++;
+        str2++;
+    }
+    return *(unsigned char *)str1 - *(unsigned char *)str2;
+}
+
+
 
 char *custom_strcpy(char *dest, const char *src) {
     char *dest_start = dest;
@@ -563,11 +579,11 @@ char *strcpy(char *dest, const char *src) {
 
 
 typedef struct {
-    char name[MAX_FILENAME_LENGTH]; // Nombre del archivo
-    unsigned int size;              // Tamaño del archivo (en bytes)
-    unsigned int start_block;       // Bloque inicial en el disco virtual
+    char name[MAX_NAME_LENGTH];       // Nombre del archivo
+    unsigned int start_block;         // Bloque inicial en el disco
+    unsigned int size;                // Tamaño del archivo (en bytes)
+    char content[MAX_CONTENT_LENGTH]; // Contenido del archivo
 } FileEntry;
-
 
 
 #define TRUE 1
@@ -587,37 +603,78 @@ unsigned int custom_strlen(const char *str) {
 // Tabla de archivos en memoria
 FileEntry file_table[MAX_FILES];
 
+#define MAX_CONTENT_LENGTH 1024
+
 unsigned int file_count = 0; // Número de archivos creados
 
 
+char content[MAX_CONTENT_LENGTH];
 
 char virtual_disk[DISK_SIZE];
 
 
-typedef struct {
-    char name[MAX_NAME_LENGTH]; // Nombre del directorio
-    unsigned int start_block;   // Bloque inicial en el disco
-    unsigned int size;          // Tamaño del directorio (en bloques)
-} DirectoryEntry;
+
 
 // Tabla de directorios en memoria
+typedef struct {
+    char name[MAX_NAME_LENGTH];  // Nombre del directorio
+    unsigned int start_block;    // Bloque inicial
+    unsigned int size;           // Tamaño del directorio
+} DirectoryEntry;
+#define MAX_LINES 10000
+
 DirectoryEntry directory_table[MAX_DIRECTORIES];
 unsigned int directory_count = 0;
-void create_new_file(const char *filename) {
-    int cursor_y = 0;
-    custom_strcpy(file_table[file_count].name, filename);
-    file_table[file_count].size = 1;
+void create_new_file(const char *filename, const char *content) {
+    custom_strcpy(file_table[file_count].name, filename);   // Copiar el nombre
+    custom_strcpy(file_table[file_count].content, content); // Copiar el contenido
+    file_table[file_count].size = custom_strlen(content);   // Tamaño del archivo
     file_table[file_count].start_block = directory_count * 16 + file_count;
     file_count++;
-
-    k_printf("Archivo creado: ", cursor_y++, GREEN_TXT);
-    k_printf_no_newline(filename, cursor_y++, WHITE_TXT);
 }
 
-int touch(const char *filename) {
-    create_new_file(filename);
+
+int touch(const char *filename, const char *content) {
+    create_new_file(filename, content);
     return 0;
 }
+
+
+
+void update_file_content(const char *filename, const char *new_content) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (custom_strcmp(file_table[i].name, filename) == 0) { // Comparar nombres
+            custom_strcpy(file_table[i].content, new_content);  // Actualizar contenido
+            file_table[i].size = custom_strlen(new_content);    // Actualizar tamaño
+            return; // Salir después de actualizar
+        }
+    }
+    // Si no se encuentra el archivo
+    
+}
+
+
+
+void show_file_content(const char *filename) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (custom_strcmp(file_table[i].name, filename) == 0) { // Comparar nombres
+            k_printf_no_newline(filename, 0, WHITE_TXT); // Mostrar contenido file_table[i].content
+            k_printf_no_newline(file_table[i].content, 0, WHITE_TXT); // Mostrar contenido 
+            return; // Salir después de mostrar
+        }
+    }
+    // Si no se encuentra el archivo
+    k_printf("Archivo no encontrado", 0, RED_TXT);
+}
+
+
+
+
+#define KEYBOARD_PORT 0x60      // Puerto de entrada del teclado
+#define STATUS_REGISTER 0x64   // Registro de estado del teclado
+#define OUTPUT_BUFFER_FULL 0x01 // Bit para verificar si el buffer tiene datos
+char input_buffer[INPUT_BUFFER_SIZE]; // Buffer de entrada de texto
+
 
 
 
@@ -741,13 +798,7 @@ int mkdir(const char *dirname) {
 
 
 
-int cursor_x = 0;      // Posición horizontal del cursor
-int cursor_y = 0;      // Posición vertical del cursor
-char input_buffer[INPUT_BUFFER_SIZE]; // Buffer de entrada de texto
-int input_index = 0;            // Índice para el buffer de entrada
 
-// Variable para evitar múltiples lecturas del mismo scancode
-volatile unsigned char last_scancode = 0;
 
 // Lee un carácter desde el puerto del teclado
 unsigned char read_scancode() {
@@ -874,7 +925,6 @@ void process_input_logged() {
 
 
 
-
 // Procesar el contenido del buffer de entrada cuando se presiona Enter
 void process_input() {
     input_buffer[input_index] = '\0'; // Termina la cadena con un carácter nulo
@@ -914,20 +964,10 @@ void process_input() {
 
 
         cursor_y++;
-    } else if (strcmp(input_buffer, "bearfetch") == 0) {
-        k_clear_screen();
-        cursor_y = 0;
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
+    } 
 
-        k_printf_center(" BEAR OS ", cursor_y++, ORANGE_TXT);
-        k_printf_center("AUTHOR: NopAngel", cursor_y++, GRAY_TXT);
-        k_printf_center("Repository: github.com/NopAngel/bear", cursor_y++, RED_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-    } else if (strcmp(input_buffer, "reboot") == 0) {
+    
+else if (strcmp(input_buffer, "reboot") == 0) {
 
     
 
@@ -984,7 +1024,8 @@ void process_input() {
         cursor_y = cursor_y + 1;
         const char *value = input_buffer + 6;
         k_printf(value, cursor_y++, WHITE_TXT);
-    }else if (strncmp(input_buffer, "print-red ", 10) == 0) {
+    }   
+    else if (strncmp(input_buffer, "print-red ", 10) == 0) {
         cursor_y = cursor_y + 1;
         const char *value = input_buffer + 10;
         k_printf(value, cursor_y++, RED_TXT);
@@ -1034,7 +1075,7 @@ else if (strcmp(input_buffer, "repo") == 0) {
         const char *filename = input_buffer + 6;
         cursor_y = 20;
 
-        touch(filename);
+        touch(filename, "");
     }else if (strcmp(input_buffer, "pwd") == 0) {
         k_printf("*/home/", cursor_y++, GREEN_TXT);
     } else if (strncmp(input_buffer, "man mkdir", 6) == 0) {
@@ -1319,7 +1360,7 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 {
     mkdir("scripts");
     mkdir("system");
-    touch("IMPORTANT.md");
+    touch("IMPORTANT.md", "haha");
 
     k_clear_screen();
 
