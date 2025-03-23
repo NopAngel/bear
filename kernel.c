@@ -1511,3 +1511,37 @@ void W_MSG(){
 
 
 
+/*
+*
+*
+*
+*
+*		 FOOTER - COMMENTARY FOR DEVELOPERS
+*
+*
+*
+*
+*
+*
+*		kernel.c:
+*			- The code editor used for the ESET kernel is: badeditor. This editor was created by myself 
+*                    (it's a code editor in the terminal), which basically allows you to write much more comfortably and quickly.
+*            brings support to:
+*
+*			- C
+*
+*			- C++
+*
+*			- Assembly
+*	
+*			- SH (Shell Script)
+*
+*			- Pascal
+*
+*			- LD/linker script (just the highlight)
+*
+*
+*	It has quite a few things, if you want you can take a look at each of them, it will soon be published on my GitHub,
+*                         and it will be open source :)
+*	
+*/
