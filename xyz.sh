@@ -16,7 +16,7 @@ process_table <- list()                                            # Process tab
 # Function to log events in the system log
 log_event <- function(event_type, message) {
   if (length(event_log) >= EVENT_LOG_SIZE) {
-    event_log <<- event_log[-1] # Remove the oldest log to keep the log size within the limit
+    event_log <<- event_log[-1] 
   }
   timestamp <- Sys.time()
   event <- paste("[", event_type, "]", timestamp, "-", message)
@@ -24,7 +24,6 @@ log_event <- function(event_type, message) {
   cat(event, "\n")
 }
 
-# Function to load binary data into a specific register
 load_register <- function(register_id, data) {
   if (register_id > NUM_REGISTERS || register_id <= 0) {
     stop("[ERROR] Invalid register ID!")

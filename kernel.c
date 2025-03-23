@@ -435,7 +435,7 @@ void draw_pixel(int x, int y, uint8_t color) {
 
 void kernel_panic(const char *message) {
     // Desactivar interrupciones
-    asm volatile ("cli");
+    asm volatile ("hlt");
 
     // Obtenemos puntero a memoria de video
     volatile char *video = (char *)VIDEO_MEMORY;
@@ -467,7 +467,7 @@ void kernel_panic(const char *message) {
     // Bucle infinito para detener el sistema
        
     while (1) {
-        asm volatile ("hlt");
+        asm volatile ("cli");
     }
 }
 
@@ -568,6 +568,8 @@ typedef struct {
     unsigned int start_block;       // Bloque inicial en el disco virtual
 } FileEntry;
 
+
+
 #define TRUE 1
 #define FALSE 0
 typedef int bool;
@@ -584,13 +586,14 @@ unsigned int custom_strlen(const char *str) {
 
 // Tabla de archivos en memoria
 FileEntry file_table[MAX_FILES];
+
 unsigned int file_count = 0; // Número de archivos creados
 
 
-// Simulación del disco virtual
+
 char virtual_disk[DISK_SIZE];
 
-// Estructura para una entrada de directorio
+
 typedef struct {
     char name[MAX_NAME_LENGTH]; // Nombre del directorio
     unsigned int start_block;   // Bloque inicial en el disco
@@ -599,13 +602,11 @@ typedef struct {
 
 // Tabla de directorios en memoria
 DirectoryEntry directory_table[MAX_DIRECTORIES];
-unsigned int directory_count = 0; // Número de directorios creados
-
-
+unsigned int directory_count = 0;
 void create_new_file(const char *filename) {
     int cursor_y = 0;
     custom_strcpy(file_table[file_count].name, filename);
-    file_table[file_count].size = 0;
+    file_table[file_count].size = 1;
     file_table[file_count].start_block = directory_count * 16 + file_count;
     file_count++;
 
@@ -617,6 +618,7 @@ int touch(const char *filename) {
     create_new_file(filename);
     return 0;
 }
+
 
 
 
@@ -670,11 +672,9 @@ void list_items() {
         for (unsigned int i = 0; i < directory_count; i++) {
             k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
             k_printf_no_newline(directory_table[i].name, cursor_y++, WHITE_TXT);
-            k_printf_no_newline("- apm", cursor_y++, BLUE_TXT);
-            k_printf_no_newline("\n", cursor_y++, WHITE_TXT);
         }
     }
-    cursor_y = cursor_y + 7;
+    cursor_y = cursor_y + 2;
 
     // Listar archivos
     if (file_count > 0) {
@@ -682,7 +682,6 @@ void list_items() {
         for (unsigned int i = 0; i < file_count; i++) {
             k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
             k_printf_no_newline(file_table[i].name, cursor_y++, WHITE_TXT);
-            k_printf_no_newline("- apm (archivo del sistema)", cursor_y++, BLUE_TXT);
 
         }
     }
@@ -690,10 +689,11 @@ void list_items() {
     // Si no hay contenido
     if (directory_count == 0 && file_count == 0) {
         k_printf("No hay contenido.\n", 1, WHITE_TXT);
-        k_printf_no_newline("- apm (archivo del sistema)", cursor_y++, BLUE_TXT);
 
     }
 }
+
+
 
 
 
@@ -728,7 +728,7 @@ int mkdir(const char *dirname) {
     // Crear el nuevo directorio
     strcpy(directory_table[directory_count].name, dirname); // Usar directory_count como índice
     directory_table[directory_count].start_block = directory_count * 16; // Bloques consecutivos
-    directory_table[directory_count].size = 16; // Tamaño asignado
+    directory_table[directory_count].size = 1; // Tamaño asignado
     directory_count++; // Incrementar el contador
 
     k_printf("Directorio creado: ", 0, GREEN_TXT);
@@ -883,24 +883,60 @@ void process_input() {
     if (strcmp(input_buffer, "test") == 0) {
         k_printf("Hello, World!", cursor_y, GREEN_TXT); // Respuesta
         cursor_y++;
+    }else if (strcmp(input_buffer, "view IMPORTANT.md") == 0) {
+        k_clear_screen();
+        cursor_y = 0;
+        k_printf_center("IMPORTANT.md", cursor_y++, BLUE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("Hola! Soy NopAngel (si, el creador de este kernel)", cursor_y++, WHITE_TXT);
+        k_printf("Y solo era para decir que si tienes alguna duda", cursor_y++, WHITE_TXT);
+        k_printf("De algun comando, lo podras ver en 'help'", cursor_y++, WHITE_TXT);
+        k_printf("Espero disfrutes el kernel!", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("================================================================================", cursor_y++, GRAY_TXT);
+
+        k_printf("AUTOR: NopAngel", cursor_y++, GRAY_TXT);
+        k_printf("LICENSE: APACHE 2.0", cursor_y++, GRAY_TXT);
+        k_printf("GITHUB: github.com/NopAngel/bear", cursor_y++, GRAY_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+
+        k_printf("================================================================================", cursor_y++, GRAY_TXT);
+
+
+        cursor_y++;
     } else if (strcmp(input_buffer, "bearfetch") == 0) {
         k_clear_screen();
         cursor_y = 0;
-        k_printf(" BEAR OS ", cursor_y++, ORANGE_TXT);
-        k_printf("AUTHOR: NopAngel", cursor_y++, GRAY_TXT);
-        k_printf("Repository: github.com/NopAngel/bear", cursor_y++, RED_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+
+        k_printf_center(" BEAR OS ", cursor_y++, ORANGE_TXT);
+        k_printf_center("AUTHOR: NopAngel", cursor_y++, GRAY_TXT);
+        k_printf_center("Repository: github.com/NopAngel/bear", cursor_y++, RED_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
+        k_printf("", cursor_y++, WHITE_TXT);
     } else if (strcmp(input_buffer, "reboot") == 0) {
 
-        __asm__ volatile (
-        "mov $0x13, %ax\n"  // Modo VGA 13h
-        "int $0x10\n"       // Interrupción del BIOS
-    );
+    
 
     // Simular algún escenario crítico y luego reiniciar
+    k_clear_screen();
     k_printf("Reiniciando el sistema en 5 segundos...", 1, RED_TXT);
 
     // Esperar (simulada, por simplicidad)
-    for (volatile int i = 0; i < 50000000; i++) { }
+    for (volatile int i = 0; i < 50000000; i++) {      }
 
     reboot_system();    
     } else if (strcmp(input_buffer, "shutdown") == 0) {
@@ -984,6 +1020,9 @@ void process_input() {
 }
 else if (strcmp(input_buffer, "repo") == 0) {
         k_printf("Repositorio: github.com/NopAngel/bear", cursor_y++, GRAY_TXT);
+    }else if (strcmp(input_buffer, "welcome") == 0 || strcmp(input_buffer, "splash") == 0) {
+        k_clear_screen();
+        W_MSG();
     }else if (strncmp(input_buffer, "mkdir ", 6) == 0) {
         const char *dirname = input_buffer + 6;
         cursor_y = 20;
@@ -996,8 +1035,23 @@ else if (strcmp(input_buffer, "repo") == 0) {
         cursor_y = 20;
 
         touch(filename);
-    }else if (strncmp(input_buffer, "pwd", 6) == 0) {
-        k_printf("Home>", cursor_y++, GREEN_TXT);
+    }else if (strcmp(input_buffer, "pwd") == 0) {
+        k_printf("*/home/", cursor_y++, GREEN_TXT);
+    } else if (strncmp(input_buffer, "man mkdir", 6) == 0) {
+        cursor_y = cursor_y + 1;
+        k_printf("MKDIR:", cursor_y++, BLUE_TXT);
+        k_printf("Este comando nos ayuda para crear una carpeta", cursor_y++, WHITE_TXT);
+        k_printf("Solo tienes que poner: mkdir (nombre_del_archivo)", cursor_y++,WHITE_TXT);
+    }else if (strncmp(input_buffer, "man touch", 6) == 0) {
+        cursor_y = cursor_y + 1;
+        k_printf("TOUCH:", cursor_y++, BLUE_TXT);
+        k_printf("Este comando nos ayuda para crear un archivo", cursor_y++, WHITE_TXT);
+        k_printf("Solo tienes que poner: touch (nombre_del_archivo.su_respectiva_extension)", cursor_y++,WHITE_TXT);
+    }else if (strncmp(input_buffer, "man test", 6) == 0) {
+        cursor_y = cursor_y + 1;
+        k_printf("TEST:", cursor_y++, BLUE_TXT);
+        k_printf("Este comando nos ayuda a proba si esta corriendo el KERNEL", cursor_y++, WHITE_TXT);
+        k_printf("Correctamente, uso: 'test', es totalmente sin parametros.", cursor_y++,WHITE_TXT);
     }
     // Comando ls
     else if (strcmp(input_buffer, "ls") == 0) {
@@ -1007,11 +1061,15 @@ else if (strcmp(input_buffer, "repo") == 0) {
     }
 
     else if (strcmp(input_buffer, "bear") == 0) {
-        k_printf("KERNEL PANIC: OH NO!!! Los BEARS han tomado el control (FATAL ERROR)", cursor_y++, RED_TXT);
+        k_printf("KERNEL PANIC: OH NO!!! Los BEARS han tomado el control (FATAL ERROR, yeah esto es una broma jeje)", cursor_y++, RED_TXT);
     }
      else if (strcmp(input_buffer, "clear") == 0) {
         k_clear_screen();
         cursor_y = 0; // Resetear debajo del mensaje de bienvenida
+    }else if (strcmp(input_buffer, "") == 0) {
+        k_clear_screen();
+        cursor_y = cursor_y + 1;
+        
     }
 else if (strcmp(input_buffer, "sh") == 0) {
         k_printf("BearSH v1.3", cursor_y++, GREEN_TXT);
@@ -1259,18 +1317,18 @@ void keyboard_handler() {
 
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
 {
+    mkdir("scripts");
+    mkdir("system");
+    touch("IMPORTANT.md");
+
     k_clear_screen();
 
 
     cursor_x = 0;
     cursor_y = 19; 
 
-    // kernel_panic("KERNEL PANIC: Drivers and objects (FALTA ERROR)"); <---- Esto pasará si el código
-    //(o kernel) colapsa.
-
     
     sound_init();
-
 
 
     init_shared_memory();
