@@ -52,14 +52,11 @@ iso: compile
 run-iso: iso
 	qemu-system-i386 -cdrom $(ISO_NAME)
 
-
-run-editor:
-	cd Downloads/sublime_text/
-	./sublime_text  # <--- It just runs on my computer, since I have it saved like that HAHA
-
 run:
 	qemu-system-i386 -kernel ./kernel -vga std
 
+intro:
+	g++ ./intro.cxx -o ax && sudo ./ax
 
 clean:
 	rm -rf iso
