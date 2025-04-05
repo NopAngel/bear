@@ -1,4 +1,4 @@
-unsigned int k_printf_r(char *message, unsigned int line, unsigned int color)
+unsigned int k_printf(char *message, unsigned int line, unsigned int color)
 {
 	char *vidmem = (char *) 0xb8000;
 	unsigned int i=0;
@@ -22,13 +22,5 @@ unsigned int k_printf_r(char *message, unsigned int line, unsigned int color)
 	};
 
 	return(1);
-}
-
-
-
-
-void kernelPanic(char * reasons) {
-	asm volatile("cli");
-	k_printf_r(reasons, 0x04, 0);
 }
 

@@ -35,7 +35,12 @@ volatile unsigned char last_scancode = 0;
 
 int LOGIN = 1;
 void k_clear_screen();
+#include "fs/k_printf.h"
+#include "reboot.h"
 #include "include/multiboot.h"
+#include "shutdown.h"
+#include "panic/panic.h"
+
 void set_background_color(const char *color_name);
 unsigned int k_printf(char *message, unsigned int line, unsigned int color);
 unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigned int color);
@@ -53,7 +58,7 @@ typedef unsigned long long uint64_t;
 /*
 *   Explanation: These "#define's" act as a kind of credit, which is what it is used for to note.
 *
-*   - M = Main
+*   - M = Max
 *   - X = 10
 *   - N = Name
 */ 
@@ -102,26 +107,6 @@ typedef unsigned long long uint64_t;
 void free_shared_memory(void *address);
 void init_shared_memory();
 void kernel_panic(const char *message);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // SHARED MEMORY'S
@@ -219,63 +204,6 @@ CANT USE:
 
 
 
-// REBOOT AND APM SYSTEM
-
-
-void reboot_system() {
-    // Deshabilitamos las interrupciones
-    __asm__ volatile("cli");
-
-    // Esperar que el buffer de salida del controlador esté vacío
-    while (1) {
-        unsigned char status;
-        __asm__ volatile (
-            "inb %1, %0"            // Leer el estado del puerto 0x64
-            : "=a"(status)          // El resultado se almacena en "status"
-            : "Nd"(0x64)            // Puerto de E/S 0x64
-        );
-        if ((status & 0x02) == 0) { // Verificar si el bit ocupado está en 0
-            break;
-        }
-    }
-
-    // Enviar el comando de reinicio al puerto 0x64
-    __asm__ volatile (
-        "outb %0, %1"              // Enviar un comando al puerto
-        :                          // No hay salida
-        : "a"((unsigned char)0xFE), "Nd"(0x64)  // Valor inmediato en %al, puerto 0x64
-    );
-
-    // Si el reinicio falla, mantener un bucle infinito
-    while (1);
-}
-
-// Prototipo de la función para apagar el sistema
-void shutdown_system();
-
-// Implementación de shutdown_system
-void shutdown_system() {
-    // Deshabilitar las interrupciones
-    __asm__ volatile("cli");
-
-    // Solicitar el apagado a través de la BIOS usando APM
-    __asm__ volatile (
-        "mov $0x5307, %ax\n"  // Función APM: APAGADO
-        "mov $0x0001, %bx\n"  // Solicitud para apagar el sistema
-        "mov $0x0003, %cx\n"  // Estado del dispositivo: Apagar
-        "int $0x15\n"         // Llamada a la interrupción de APM
-    );
-
-    // Si el apagado falla, permanecer en un bucle infinito
-    while (1);
-}
-
-// Ejemplo de uso dentro del kernel
-
-
-
-
-// Prototipo de la función
 
 
 
@@ -330,33 +258,6 @@ void stop_tone() {
 
 
 
-#define VIDEO_MEMORY 0xA0000 // Dirección base de memoria VGA
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 200
-
-// Función para configurar el modo de video VGA (320x200x256 colores)
-void set_video_mode() {
-    // Usamos la interrupción del BIOS 0x10 para cambiar al modo 0x13
-    __asm__ volatile (
-        "mov $0x13, %ax\n"  // Establecer modo 0x13
-        "int $0x10\n"       // Interrupción BIOS para video
-    );
-}
-
-// Función para dibujar un píxel directamente en la memoria de video
-void draw_pixel_gpu(int x, int y, unsigned char color) {
-    char *video = (char *)VIDEO_MEMORY; // Puntero a memoria VGA
-    video[(y * SCREEN_WIDTH) + x] = color; // Escribir en la posición adecuada
-}
-
-// Función para rellenar la pantalla con un color
-void fill_screen(unsigned char color) {
-    char *video = (char *)VIDEO_MEMORY;
-    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-        video[i] = color; // Llenar cada byte de memoria con el color dado
-    }
-}
-
 
 
 
@@ -368,21 +269,6 @@ void fill_screen(unsigned char color) {
 
 
 
-
-// Definimos nuestro propio tipo uint8_t como un entero sin signo de 8 bits
-typedef unsigned char uint8_t;
-
-// Definimos las dimensiones de la pantalla y la memoria de video
-#define VIDEO_MEMORY 0xA0000
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 200
-
-// Fuente predeterminada
-uint8_t defaultFont[128][8] = {
-    {0x00, 0x18, 0x3C, 0x3C, 0x18, 0x18, 0x18, 0x00}, // Ejemplo de carácter "!"
-    {0x00, 0x00, 0x7E, 0x81, 0x81, 0x81, 0x7E, 0x00}, // Ejemplo de carácter "O"
-    // Otros caracteres aquí...
-};
 
 // Prototipos de funciones
 /*void draw_pixel(int x, int y, uint8_t color);
@@ -432,57 +318,10 @@ void draw_pixel(int x, int y, uint8_t color) {
 #include "include/keyboard.h"
 #include "include/disk.h"
 #include "include/INFO.h"
-#define VIDEO_MEMORY 0xB8000
-#define SCREEN_WIDTH 80
-
-// PANIC's.
-
-
-
-
-void kernel_panic(const char *message) {
-    // Desactivar interrupciones
-    asm volatile ("hlt");
-
-    // Obtenemos puntero a memoria de video
-    volatile char *video = (char *)VIDEO_MEMORY;
-
-    // Limpiar pantalla (opcional)
-    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT * 2; i += 2) {
-        video[i] = ' ';      // Espacio vacío
-        video[i + 1] = 0x07; // Atributos: blanco sobre negro
-    }
-
-    // Escribir el mensaje en la pantalla
-    int x = 0; // Posición X
-    int y = 0; // Posición Y
-    while (*message) {
-        int pos = (y * SCREEN_WIDTH + x) * 2;
-        video[pos] = *message;   // Caracter
-        video[pos + 1] = 0x4F;  // Color: rojo sobre blanco
-        message++;
-        x++;
-        if (x >= SCREEN_WIDTH) { // Manejo de salto de línea
-            x = 0;
-            y++;
-        }
-        if (y >= SCREEN_HEIGHT) { // Evitar escribir fuera del rango
-            break;
-        }
-    }
-
-    // Bucle infinito para detener el sistema
-       
-    while (1) {
-        asm volatile ("cli");
-    }
-}
-
 void W_MSG_NOT() {
     k_printf("hi user! :)", 0, WHITE_TXT);
     k_printf("please logged", 1, WHITE_TXT);
 }
-
 
 void W_MSG() {
     k_clear_screen();
@@ -916,6 +755,16 @@ void process_input_logged() {
     input_index = 0;
     cursor_x = 0;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1421,7 +1270,7 @@ unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigne
 }
 
 
-
+/*
 
 unsigned int k_printf(char *message, unsigned int line, unsigned int color)
 {
@@ -1447,7 +1296,7 @@ unsigned int k_printf(char *message, unsigned int line, unsigned int color)
 	};
 
 	return(1);
-}
+}*/
 
 unsigned int k_printf_center(char *message, unsigned int line, unsigned int color) {
     char *vidmem = (char *) 0xb8000;

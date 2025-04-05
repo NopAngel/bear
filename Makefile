@@ -41,7 +41,18 @@ KERNEL_BIN=kernel
 compile:
 	nasm -f elf32 kernel.asm -o kasm.o -lm
 	gcc -m32 -c kernel.c -o kc.o
-	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o
+	gcc -m32 -c fs/k_printf.c -o k_print.o
+	gcc -m32 -c reboot.c -o reboot.o
+	gcc -m32 -c shutdown.c -o shutdown.o
+	gcc -m32 -c panic/panic.c -o panic.o
+	gcc -m32 -c include/drivers/vesa/vesa.c -o vesa.o
+	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o
+
+
+#compile:
+#	nasm -f elf32 kernel.asm -o kasm.o -lm
+#	gcc -m32 -c kernel.c -o kc.o
+#	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o
 
 iso: compile
 	mkdir -p iso/boot/grub
