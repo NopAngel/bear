@@ -1,3 +1,3 @@
-import plataform
+import plataform as pl
 
-print(plataform)
+print(pl)
