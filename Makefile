@@ -8,7 +8,7 @@
 # 													-run-iso: run iso
 # 													-clean: delete ass files
 #
-# _ Made by: NopAngel, LICESE: 
+# _ Made by: NopAngel, LICESE: APACHE 2.0
 
 #
 #	set timeout=5
