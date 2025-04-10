@@ -24,6 +24,8 @@ unsigned int k_printf_r(char *message, unsigned int line, unsigned int color)
 	return(1);
 }
 
+// WARNING: I know this needs fixing, but I'm too lazy. I'll do it later. :)
+
 
 
 
