@@ -1,5 +1,5 @@
 
-
+		IDEA
         																							IDEA
       It will be a basic VGA (and VESA = Video Electronics Standards Association) system.
 
