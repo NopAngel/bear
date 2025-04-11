@@ -7,13 +7,13 @@ Minimum requirement:                    It should be noted that with these requi
 
  - Storage: 20 GB
 
- - Graphics: VGA (for 1024x768)
+ - Graphics: VGA (for 800x600)
 
 Recommended requirements:
 
  - RAM: 4 GB.
 
- - Storage: 50 GB or more for additional software, updates, and file storage.
+ - Storage: 10 GB ( or more for additional software, updates, and file storage. )
 
  - Graphics: HDMI (for 1920x1080)
 
