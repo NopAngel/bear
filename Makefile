@@ -10,24 +10,6 @@
 #
 # _ Made by: NopAngel, LICESE: APACHE 2.0
 
-#
-#	set timeout=5
-#set default=0
-#set gfxpayload=1920x1080
-#framebuffer = (uint8_t *)multiboot_info->framebuffer_addr;
-#framebuffer_width = multiboot_info->framebuffer_width;
-#framebuffer_height = multiboot_info->framebuffer_height;
-#framebuffer_pitch = multiboot_info->framebuffer_pitch;
-#framebuffer_bpp = multiboot_info->framebuffer_bpp;
-
-
-
-#menuentry "BearOS" {
-#    multiboot /boot/kernel
-#    boot
-#}
-#
-#
 
 
 
@@ -72,3 +54,25 @@ intro:
 clean:
 	rm -rf iso
 	rm -f kasm.o kc.o $(KERNEL_BIN) $(ISO_NAME)
+
+
+
+
+#
+#	set timeout=5
+#set default=0
+#set gfxpayload=1920x1080
+#framebuffer = (uint8_t *)multiboot_info->framebuffer_addr;
+#framebuffer_width = multiboot_info->framebuffer_width;
+#framebuffer_height = multiboot_info->framebuffer_height;
+#framebuffer_pitch = multiboot_info->framebuffer_pitch;
+#framebuffer_bpp = multiboot_info->framebuffer_bpp;
+
+
+
+#menuentry "BearOS" {
+#    multiboot /boot/kernel
+#    boot
+#}
+#
+#
