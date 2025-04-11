@@ -26,11 +26,11 @@
 
 #define MAX_NAME_LENGTH 256
 #define MAX_CONTENT_LENGTH 1024
-int cursor_x = 0;      // Posición horizontal del cursor
-int cursor_y = 0;      // Posición vertical del cursor
-int input_index = 0;            // Índice para el buffer de entrada
+int cursor_x = 0;   
+int cursor_y = 0; 
+int input_index = 0;    
 
-// Variable para evitar múltiples lecturas del mismo scancode
+
 volatile unsigned char last_scancode = 0;
 
 int LOGIN = 1;
@@ -118,21 +118,20 @@ void *allocate_shared_memory(unsigned int size);
 void free_shared_memory(void *address);
 void init_shared_memory();
 
-// Variables globales para memoria compartida
-#define SHARED_MEMORY_SIZE 4096   // Tamaño total de la memoria compartida
-#define MAX_SHARED_BLOCKS 8      // Número máximo de bloques de memoria compartida
+
+#define SHARED_MEMORY_SIZE 4096
+#define MAX_SHARED_BLOCKS 8     
 
 typedef struct {
-    int is_used;               // Indica si el bloque está en uso
-    void *start_address;       // Dirección base del bloque
-    unsigned int size;         // Tamaño del bloque
+    int is_used;             
+    void *start_address;      
+    unsigned int size;  
 } shared_block_t;
 
-// Tabla de bloques y dirección base de memoria compartida
 shared_block_t shared_blocks[MAX_SHARED_BLOCKS];
 void *shared_memory_base = (void *)0x100000;
 
-// Función para inicializar los bloques de memoria compartida
+
 void init_shared_memory() {
     for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
         shared_blocks[i].is_used = 0;
@@ -141,22 +140,21 @@ void init_shared_memory() {
     }
 }
 
-// Función para asignar un bloque de memoria compartida
+
 void *allocate_shared_memory(unsigned int size) {
     for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
         if (!shared_blocks[i].is_used && shared_blocks[i].size >= size) {
-            shared_blocks[i].is_used = 1; // Marcar el bloque como usado
-            return shared_blocks[i].start_address; // Retornar la dirección base del bloque
+            shared_blocks[i].is_used = 1; 
+            return shared_blocks[i].start_address;
         }
     }
-    return 0; // Devuelve 0 si no hay bloques disponibles
+    return 0; 
 }
 
-// Función para liberar un bloque de memoria compartida
 void free_shared_memory(void *address) {
     for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
         if (shared_blocks[i].start_address == address) {
-            shared_blocks[i].is_used = 0; // Marcar el bloque como libre
+            shared_blocks[i].is_used = 0;
             return;
         }
     }
@@ -220,34 +218,30 @@ CANT USE:
 
 // sound driver
 
-#define SOUND_COMMAND_PORT 0x388  // Ejemplo de puerto base del hardware de sonido
-#define SOUND_DATA_PORT 0x389    // Puerto para datos
+#define SOUND_COMMAND_PORT 0x388 
+#define SOUND_DATA_PORT 0x389    
 
-// Función para escribir en un puerto (hardware directo)
+
 static inline void outb(unsigned short port, unsigned char value) {
     __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
 }
 
-// Función para inicializar el hardware de sonido
 void sound_init() {
-    // Enviar un comando de inicialización al hardware
-    outb(SOUND_COMMAND_PORT, 0x01); // Ejemplo de comando
-    // Usando tu función para mensajes k_printf("Sonido inicializado.\n", 0, 0x0F); 
+    outb(SOUND_COMMAND_PORT, 0x01); 
 }
 
-// Función para reproducir un tono
 void play_tone(unsigned int frequency) {
-   // Feedback al usuario del kernel  k_printf("Reproduciendo tono...\n", 1, 0x0F); 
 
-    // Configurar la frecuencia del sonido
-    outb(SOUND_DATA_PORT, (unsigned char)(frequency & 0xFF));       // Parte baja
-    outb(SOUND_DATA_PORT + 1, (unsigned char)((frequency >> 8) & 0xFF)); // Parte alta
+
+
+    outb(SOUND_DATA_PORT, (unsigned char)(frequency & 0xFF)); 
+    outb(SOUND_DATA_PORT + 1, (unsigned char)((frequency >> 8) & 0xFF)); 
 }
 
-// Función para detener el sonido
+
 void stop_tone() {
-    // k_printf("Deteniendo tono...\n", 2, 0x0F); 
-    outb(SOUND_COMMAND_PORT, 0x00); // Enviar comando de detener
+
+    outb(SOUND_COMMAND_PORT, 0x00);
 }
 
 
@@ -260,51 +254,6 @@ void stop_tone() {
 
 
 
-
-
-
-// VIDEO
-
-
-
-
-
-
-// Prototipos de funciones
-/*void draw_pixel(int x, int y, uint8_t color);
-void draw_char(int x, int y, char c, uint8_t color);
-void draw_string(int x, int y, const char *str, uint8_t color);
-
-// Implementación para dibujar un píxel en pantalla
-void draw_pixel(int x, int y, uint8_t color) {
-    if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
-        char *video = (char *)VIDEO_MEMORY;
-        video[(y * SCREEN_WIDTH) + x] = color;
-    }
-}*/
-
-// Implementación para dibujar un carácter usando la fuente
-
-// Función principal del kernel
-/*void kernel_main() {
-    // Cambiamos al modo gráfico VGA (320x200)
-    __asm__ volatile (
-        "mov $0x13, %ax\n"  // Modo VGA 13h
-        "int $0x10\n"       // Interrupción del BIOS
-    );
-
-    // Limpiamos la pantalla con un color de fondo
-    char *video = (char *)VIDEO_MEMORY;
-    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-        video[i] = 0x01; // Azul oscuro
-    }
-
-    // Dibujamos texto en pantalla
-    draw_string(10, 10, "Hello, BearOS!", 0x0F); // Blanco
-
-    // Bucle infinito para mantener el sistema en ejecución
-    while (1);
-}*/
 
 
 
@@ -349,7 +298,7 @@ void W_MSG() {
 
 
 
-volatile unsigned char current_bg_color = BLACK_BG; // Color de fondo por defecto
+volatile unsigned char current_bg_color = BLACK_BG;
 
 
 
@@ -379,7 +328,7 @@ int strncmp(const char *str1, const char *str2, unsigned int n) {
         n--;
     }
     if (n == 0) {
-        return 0; // Son iguales hasta los primeros n caracteres
+        return 0; 
     }
     return *(unsigned char *)str1 - *(unsigned char *)str2;
 }
@@ -401,7 +350,7 @@ char *custom_strcpy(char *dest, const char *src) {
         dest++;
         src++;
     }
-    *dest = '\0'; // Termina la cadena con un carácter nulo
+    *dest = '\0'; 
     return dest_start;
 }
 char *strcpy(char *dest, const char *src) {
@@ -411,17 +360,17 @@ char *strcpy(char *dest, const char *src) {
         dest++;
         src++;
     }
-    *dest = '\0'; // Termina la cadena con un carácter nulo
+    *dest = '\0'; 
     return dest_start;
 }
 
 
 
 typedef struct {
-    char name[MAX_NAME_LENGTH];       // Nombre del archivo
-    unsigned int start_block;         // Bloque inicial en el disco
-    unsigned int size;                // Tamaño del archivo (en bytes)
-    char content[MAX_CONTENT_LENGTH]; // Contenido del archivo
+    char name[MAX_NAME_LENGTH];    
+    unsigned int start_block;     
+    unsigned int size;             
+    char content[MAX_CONTENT_LENGTH];
 } FileEntry;
 
 
@@ -439,12 +388,11 @@ unsigned int custom_strlen(const char *str) {
 
 
 
-// Tabla de archivos en memoria
 FileEntry file_table[MAX_FILES];
 
 #define MAX_CONTENT_LENGTH 1024
 
-unsigned int file_count = 0; // Número de archivos creados
+unsigned int file_count = 0; 
 
 
 char content[MAX_CONTENT_LENGTH];
@@ -454,20 +402,20 @@ char virtual_disk[DISK_SIZE];
 
 
 
-// Tabla de directorios en memoria
+
 typedef struct {
-    char name[MAX_NAME_LENGTH];  // Nombre del directorio
-    unsigned int start_block;    // Bloque inicial
-    unsigned int size;           // Tamaño del directorio
+    char name[MAX_NAME_LENGTH];  
+    unsigned int start_block;  
+    unsigned int size;           
 } DirectoryEntry;
 #define MAX_LINES 10000
 
 DirectoryEntry directory_table[MAX_DIRECTORIES];
 unsigned int directory_count = 0;
 void create_new_file(const char *filename, const char *content) {
-    custom_strcpy(file_table[file_count].name, filename);   // Copiar el nombre
-    custom_strcpy(file_table[file_count].content, content); // Copiar el contenido
-    file_table[file_count].size = custom_strlen(content);   // Tamaño del archivo
+    custom_strcpy(file_table[file_count].name, filename);   
+    custom_strcpy(file_table[file_count].content, content); 
+    file_table[file_count].size = custom_strlen(content);   
     file_table[file_count].start_block = directory_count * 16 + file_count;
     file_count++;
 }
@@ -482,13 +430,13 @@ int touch(const char *filename, const char *content) {
 
 void update_file_content(const char *filename, const char *new_content) {
     for (unsigned int i = 0; i < file_count; i++) {
-        if (custom_strcmp(file_table[i].name, filename) == 0) { // Comparar nombres
-            custom_strcpy(file_table[i].content, new_content);  // Actualizar contenido
-            file_table[i].size = custom_strlen(new_content);    // Actualizar tamaño
-            return; // Salir después de actualizar
+        if (custom_strcmp(file_table[i].name, filename) == 0) { 
+            custom_strcpy(file_table[i].content, new_content);  
+            file_table[i].size = custom_strlen(new_content);    
+            return; 
         }
     }
-    // Si no se encuentra el archivo
+
     
 }
 
@@ -496,23 +444,23 @@ void update_file_content(const char *filename, const char *new_content) {
 
 void show_file_content(const char *filename) {
     for (unsigned int i = 0; i < file_count; i++) {
-        if (custom_strcmp(file_table[i].name, filename) == 0) { // Comparar nombres
-            k_printf_no_newline(filename, 0, WHITE_TXT); // Mostrar contenido file_table[i].content
-            k_printf_no_newline(file_table[i].content, 0, WHITE_TXT); // Mostrar contenido 
-            return; // Salir después de mostrar
+        if (custom_strcmp(file_table[i].name, filename) == 0) { 
+            k_printf_no_newline(filename, 0, WHITE_TXT); 
+            k_printf_no_newline(file_table[i].content, 0, WHITE_TXT); 
+            return; 
         }
     }
-    // Si no se encuentra el archivo
+   
     k_printf("Archivo no encontrado", 0, RED_TXT);
 }
 
 
 
 
-#define KEYBOARD_PORT 0x60      // Puerto de entrada del teclado
-#define STATUS_REGISTER 0x64   // Registro de estado del teclado
-#define OUTPUT_BUFFER_FULL 0x01 // Bit para verificar si el buffer tiene datos
-char input_buffer[INPUT_BUFFER_SIZE]; // Buffer de entrada de texto
+#define KEYBOARD_PORT 0x60     
+#define STATUS_REGISTER 0x64  
+#define OUTPUT_BUFFER_FULL 0x01
+char input_buffer[INPUT_BUFFER_SIZE]; 
 
 
 
@@ -523,7 +471,7 @@ char input_buffer[INPUT_BUFFER_SIZE]; // Buffer de entrada de texto
 
 
 void set_background_color(const char *color_name) {
-    // Determinar el color según el nombre
+ 
     if (strcmp(color_name, "white") == 0) {
         current_bg_color = WHITE_BG;
     } else if (strcmp(color_name, "gray") == 0) {
@@ -551,10 +499,10 @@ void set_background_color(const char *color_name) {
         return;
     }
 
-    // Cambiar el color de fondo en toda la pantalla
+
     char *vidmem = (char *)0xb8000;
     for (int i = 0; i < SCREEN_ROWS * SCREEN_COLUMNS; i++) {
-        vidmem[i * 2 + 1] = current_bg_color; // Cambia el atributo de color
+        vidmem[i * 2 + 1] = current_bg_color; 
     }
 }
 
@@ -562,7 +510,7 @@ void set_background_color(const char *color_name) {
 void list_items() {
     int cursor_y = 0;
 
-    // Listar directorios
+
     if (directory_count > 0) {
         k_printf("Directorios:\n", cursor_y++, BLUE_TXT);
         for (unsigned int i = 0; i < directory_count; i++) {
@@ -572,7 +520,7 @@ void list_items() {
     }
     cursor_y = cursor_y + 2;
 
-    // Listar archivos
+
     if (file_count > 0) {
         k_printf("Archivos:\n", cursor_y++, GREEN_TXT);
         for (unsigned int i = 0; i < file_count; i++) {
@@ -582,7 +530,7 @@ void list_items() {
         }
     }
 
-    // Si no hay contenido
+
     if (directory_count == 0 && file_count == 0) {
         k_printf("No hay contenido.\n", 1, WHITE_TXT);
 
@@ -601,19 +549,18 @@ void W_MSG();
 
 
 int mkdir(const char *dirname) {
-    // Verificar si se alcanzó el máximo de directorios
+
     if (directory_count >= MAX_DIRECTORIES) {
         k_printf("Error: No se pueden crear más directorios.\n", 0, RED_TXT);
         return -1;
     }
 
-    // Verificar si el nombre del directorio es demasiado largo
+
     if (strlen(dirname) >= MAX_NAME_LENGTH) {
         k_printf("Error: El nombre del directorio es demasiado largo.\n", 0, RED_TXT);
         return -1;
     }
 
-    // Verificar si el directorio ya existe
     for (unsigned int i = 0; i < directory_count; i++) {
         if (strcmp(directory_table[i].name, dirname) == 0) {
             k_printf("Error: El directorio ya existe.\n", 0, RED_TXT);
@@ -621,11 +568,11 @@ int mkdir(const char *dirname) {
         }
     }
 
-    // Crear el nuevo directorio
-    strcpy(directory_table[directory_count].name, dirname); // Usar directory_count como índice
-    directory_table[directory_count].start_block = directory_count * 16; // Bloques consecutivos
-    directory_table[directory_count].size = 1; // Tamaño asignado
-    directory_count++; // Incrementar el contador
+ 
+    strcpy(directory_table[directory_count].name, dirname); 
+    directory_table[directory_count].start_block = directory_count * 16; 
+    directory_table[directory_count].size = 1; 
+    directory_count++; 
 
     k_printf("Directorio creado: ", 0, GREEN_TXT);
     k_printf_no_newline(dirname, 0, WHITE_TXT);
@@ -639,14 +586,14 @@ int mkdir(const char *dirname) {
 
 
 
-// Lee un carácter desde el puerto del teclado
+
 unsigned char read_scancode() {
     unsigned char scancode;
     asm volatile ("inb %1, %0" : "=a"(scancode) : "Nd"(KEYBOARD_PORT));
     return scancode;
 }
 
-// Tabla simplificada de scancodes a ASCII
+
 const char scancode_to_ascii[] = {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b', // 0x00 - 0x0F
     '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '´', '+', '\n', 0, // 0x10 - 0x1F
@@ -659,7 +606,7 @@ const char scancode_to_ascii[] = {
 
 
 void scroll_screen() {
-    // Desplazar todas las líneas hacia arriba
+ 
     for (int i = 1; i < SCREEN_ROWS; i++) {
         for (int j = 0; j < SCREEN_COLUMNS * 2; j++) {
             SCREEN_BUFFER[(i - 1) * SCREEN_COLUMNS * 2 + j] =
@@ -667,33 +614,30 @@ void scroll_screen() {
         }
     }
 
-    // Limpiar la última línea
     for (int j = 0; j < SCREEN_COLUMNS * 2; j++) {
         SCREEN_BUFFER[(SCREEN_ROWS - 1) * SCREEN_COLUMNS * 2 + j] = 0;
     }
 
-    cursor_y = SCREEN_ROWS - 1; // Ajustar el cursor a la última fila
-    cursor_x = 0;               // Reiniciar el cursor al inicio de la línea
+    cursor_y = SCREEN_ROWS - 1; 
+    cursor_x = 0;             
 }
 
 
-// Escribe un carácter en la pantalla
 void put_char(char c) {
     int pos = (cursor_y * SCREEN_COLUMNS + cursor_x) * 2;
 
-    SCREEN_BUFFER[pos] = c;          // Almacenar carácter
-    SCREEN_BUFFER[pos + 1] = 0x07;  // Atributo de color (blanco)
+    SCREEN_BUFFER[pos] = c;          
+    SCREEN_BUFFER[pos + 1] = 0x07;  
 
-    // Actualizamos la posición del cursor
+
     cursor_x++;
     if (cursor_x >= SCREEN_COLUMNS) {
         cursor_x = 0;
         cursor_y++;
     }
 
-    // Si alcanzamos el final de la pantalla, desplazamos
     if (cursor_y >= SCREEN_ROWS) {
-        scroll_screen(); // Llama a la nueva función de desplazamiento
+        scroll_screen(); 
     }
 }
 
@@ -724,11 +668,11 @@ void put_char(char c) {
 
 
 void process_input_logged() {
-    input_buffer[input_index] = '\0'; // Termina la cadena con un carácter nulo
+    input_buffer[input_index] = '\0'; 
 
-    // Verificar si el usuario ingresó "test"
+
     if (strcmp(input_buffer, "test") == 0) {
-        k_printf("Hello, World!", cursor_y, GREEN_TXT); // Respuesta
+        k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
     } else if (strcmp(input_buffer, "bearfetch") == 0) {
         k_clear_screen();
@@ -743,15 +687,15 @@ void process_input_logged() {
         W_MSG();
     }
      else {
-        k_printf("Comando no reconocido.", cursor_y++, RED_TXT); // Mensaje por defecto
+        k_printf("Comando no reconocido.", cursor_y++, RED_TXT); 
     }
 
-    // Después de cada línea, verificamos si el cursor ha llegado al límite
+
     if (cursor_y >= SCREEN_ROWS) {
-        scroll_screen(); // Llama a la función de scroll
+        scroll_screen();
     }
 
-    // Reiniciar el buffer de entrada
+  
     input_index = 0;
     cursor_x = 0;
 }
@@ -774,13 +718,12 @@ void process_input_logged() {
 
 
 
-// Procesar el contenido del buffer de entrada cuando se presiona Enter
 void process_input() {
-    input_buffer[input_index] = '\0'; // Termina la cadena con un carácter nulo
+    input_buffer[input_index] = '\0'; 
 
-    // Verificar si el usuario ingresó "test"
+
     if (strcmp(input_buffer, "test") == 0) {
-        k_printf("Hello, World!", cursor_y, GREEN_TXT); // Respuesta
+        k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
     }else if (strcmp(input_buffer, "view IMPORTANT.md") == 0) {
         k_clear_screen();
@@ -820,27 +763,25 @@ else if (strcmp(input_buffer, "reboot") == 0) {
 
     
 
-    // Simular algún escenario crítico y luego reiniciar
+
     k_clear_screen();
     k_printf("Reiniciando el sistema en 5 segundos...", 1, RED_TXT);
 
-    // Esperar (simulada, por simplicidad)
+
     for (volatile int i = 0; i < 50000000; i++) {      }
 
     reboot_system();    
     } else if (strcmp(input_buffer, "shutdown") == 0) {
         __asm__ volatile (
-        "mov $0x13, %ax\n"  // Modo VGA 13h
-        "int $0x10\n"       // Interrupción del BIOS
+        "mov $0x13, %ax\n" 
+        "int $0x10\n"       
     );
 
-    // Simular un mensaje antes del apagado
+   
     k_printf("Apagando el sistema en 5 segundos...", 0, RED_TXT);
 
-    // Esperar un tiempo antes de apagar (simulada con un bucle)
     for (volatile int i = 0; i < 50000000; i++) { }
 
-    // Llamar a la función de apagado
     shutdown_system();
     }
 
@@ -905,8 +846,8 @@ else if (strcmp(input_buffer, "reboot") == 0) {
         k_printf("man: Muestra la informacion detallada de archivo (parametros: nombre del archivo)", cursor_y++, WHITE_TXT); 
         k_printf("touch: Crea un archivo (parametros: nombre del archivo, con su respectiva extension)", cursor_y++, WHITE_TXT); 
     } else if (strncmp(input_buffer, "setbg/", 6U) == 0) {
-    const char *color_name = input_buffer + 6; // Extraer el nombre del color
-    set_background_color(color_name);         // Cambiar el color de fondo
+    const char *color_name = input_buffer + 6; 
+    set_background_color(color_name);         
 }
 else if (strcmp(input_buffer, "repo") == 0) {
         k_printf("Repositorio: github.com/NopAngel/bear", cursor_y++, GRAY_TXT);
@@ -919,7 +860,7 @@ else if (strcmp(input_buffer, "repo") == 0) {
 
         mkdir(dirname);
     }
-    // Comando touch
+
     else if (strncmp(input_buffer, "touch ", 6) == 0) {
         const char *filename = input_buffer + 6;
         cursor_y = 20;
@@ -943,7 +884,7 @@ else if (strcmp(input_buffer, "repo") == 0) {
         k_printf("Este comando nos ayuda a proba si esta corriendo el KERNEL", cursor_y++, WHITE_TXT);
         k_printf("Correctamente, uso: 'test', es totalmente sin parametros.", cursor_y++,WHITE_TXT);
     }
-    // Comando ls
+
     else if (strcmp(input_buffer, "ls") == 0) {
         k_clear_screen();
         cursor_y = 20;
@@ -955,7 +896,7 @@ else if (strcmp(input_buffer, "repo") == 0) {
     }
      else if (strcmp(input_buffer, "clear") == 0) {
         k_clear_screen();
-        cursor_y = 0; // Resetear debajo del mensaje de bienvenida
+        cursor_y = 0; 
     }else if (strcmp(input_buffer, "") == 0) {
         k_clear_screen();
         cursor_y = cursor_y + 1;
@@ -965,21 +906,20 @@ else if (strcmp(input_buffer, "sh") == 0) {
         k_printf("BearSH v1.3", cursor_y++, GREEN_TXT);
         }
      else {
-        k_printf("Comando no reconocido.", cursor_y++, RED_TXT); // Mensaje por defecto
+        k_printf("Comando no reconocido.", cursor_y++, RED_TXT); 
     }
 
-    // Después de cada línea, verificamos si el cursor ha llegado al límite
+
     if (cursor_y >= SCREEN_ROWS) {
-        scroll_screen(); // Llama a la función de scroll
+        scroll_screen(); 
     }
 
-    // Reiniciar el buffer de entrada
+
     input_index = 0;
     cursor_x = 0;
 }
 
 
-// Controlador de teclado con soporte para backspace, espacio y enter
 /*
 void keyboard_handler() {
     unsigned char scancode = read_scancode();
@@ -1028,9 +968,9 @@ void keyboard_handler() {
 
 
 
-// Variables globales para manejar el estado de las teclas modificadoras
-int caps_lock = 0;         // Estado de Caps Lock
-int shift_pressed = 0;     // Estado de Shift (izquierdo o derecho)
+
+int caps_lock = 0;         
+int shift_pressed = 0;     
 
 
 
@@ -1038,44 +978,44 @@ int shift_pressed = 0;     // Estado de Shift (izquierdo o derecho)
 void keyboard_handler_logged() {
     unsigned char scancode = read_scancode();
 
-    // Evitar procesar el mismo scancode repetidamente
+
     if (scancode == last_scancode ) {
         return;
     }
 
     last_scancode = scancode;
 
-    // Comprobar si es un scancode de liberación (release)
+
     if (scancode & 0x80 ) {
-        // Convertir el scancode a pulsación (key press)
+      
         scancode &= 0x7F;
 
-        // Detectar si se liberó Shift
-        if (scancode == 0x2A || scancode == 0x36) { // Shift izquierdo o derecho
+     
+        if (scancode == 0x2A || scancode == 0x36) { 
             shift_pressed = 0;
         }
 
         return;
     } else {
-        // Detectar teclas modificadoras (Shift y Caps Lock)
-        if (scancode == 0x2A || scancode == 0x36) { // Shift izquierdo o derecho
+       
+        if (scancode == 0x2A || scancode == 0x36) { 
             shift_pressed = 1;
             return;
-        } else if (scancode == 0x3A) { // Caps Lock
-            caps_lock = !caps_lock; // Alternar estado de Caps Lock
+        } else if (scancode == 0x3A) { 
+            caps_lock = !caps_lock; 
             return;
         }
     }
 
-    // Si el scancode corresponde a un carácter imprimible
+
     if (scancode < sizeof(scancode_to_ascii)) {
         char ascii = scancode_to_ascii[scancode];
 
-        // Convertir a mayúsculas si Caps Lock o Shift están activos
+     
         if ((caps_lock || shift_pressed) && ascii >= 'a' && ascii <= 'z') {
-            ascii -= 32; // Convertir minúscula a mayúscula
+            ascii -= 32;
         } else if (shift_pressed && ascii >= '0' && ascii <= '9') {
-            // Manejar símbolos asociados a los números con Shift
+         
             switch (ascii) {
                 case '1': ascii = '!'; break;
                 case '2': ascii = '@'; break;
@@ -1092,10 +1032,10 @@ void keyboard_handler_logged() {
             }
         }
 
-        // Manejar teclas especiales
-        if (ascii == '\b') { // Backspace
+    
+        if (ascii == '\b') { 
             if (input_index > 0) {
-                input_index--; // Retroceder en el buffer
+                input_index--; 
                 if (cursor_x > 0) {
                     cursor_x--;
                 } else if (cursor_y > 0) {
@@ -1107,12 +1047,12 @@ void keyboard_handler_logged() {
                 SCREEN_BUFFER[pos] = ' ';
                 SCREEN_BUFFER[pos + 1] = 0x07;
             }
-        } else if (ascii == '\n') { // Enter
-            process_input_logged(); // Procesar el comando ingresado
-        } else if (ascii) { // Otros caracteres
-            if (input_index < INPUT_BUFFER_SIZE - 1) { // Evitar desbordamiento
+        } else if (ascii == '\n') { 
+            process_input_logged(); 
+        } else if (ascii) { 
+            if (input_index < INPUT_BUFFER_SIZE - 1) { 
                 input_buffer[input_index++] = ascii;
-                put_char(ascii); // Escribir carácter en pantalla
+                put_char(ascii); 
             }
         }
     }
@@ -1121,44 +1061,43 @@ void keyboard_handler_logged() {
 void keyboard_handler() {
     unsigned char scancode = read_scancode();
 
-    // Evitar procesar el mismo scancode repetidamente
+
     if (scancode == last_scancode ) {
         return;
     }
 
     last_scancode = scancode;
 
-    // Comprobar si es un scancode de liberación (release)
     if (scancode & 0x80 ) {
-        // Convertir el scancode a pulsación (key press)
+     
         scancode &= 0x7F;
 
-        // Detectar si se liberó Shift
-        if (scancode == 0x2A || scancode == 0x36) { // Shift izquierdo o derecho
+  
+        if (scancode == 0x2A || scancode == 0x36) { 
             shift_pressed = 0;
         }
 
         return;
     } else {
-        // Detectar teclas modificadoras (Shift y Caps Lock)
-        if (scancode == 0x2A || scancode == 0x36) { // Shift izquierdo o derecho
+     
+        if (scancode == 0x2A || scancode == 0x36) { 
             shift_pressed = 1;
             return;
-        } else if (scancode == 0x3A) { // Caps Lock
-            caps_lock = !caps_lock; // Alternar estado de Caps Lock
+        } else if (scancode == 0x3A) { 
+            caps_lock = !caps_lock; 
             return;
         }
     }
 
-    // Si el scancode corresponde a un carácter imprimible
+ 
     if (scancode < sizeof(scancode_to_ascii)) {
         char ascii = scancode_to_ascii[scancode];
 
-        // Convertir a mayúsculas si Caps Lock o Shift están activos
+   
         if ((caps_lock || shift_pressed) && ascii >= 'a' && ascii <= 'z') {
-            ascii -= 32; // Convertir minúscula a mayúscula
+            ascii -= 32;
         } else if (shift_pressed && ascii >= '0' && ascii <= '9') {
-            // Manejar símbolos asociados a los números con Shift
+   
             switch (ascii) {
                 case '1': ascii = '!'; break;
                 case '2': ascii = '@'; break;
@@ -1175,10 +1114,10 @@ void keyboard_handler() {
             }
         }
 
-        // Manejar teclas especiales
-        if (ascii == '\b') { // Backspace
+
+        if (ascii == '\b') { 
             if (input_index > 0) {
-                input_index--; // Retroceder en el buffer
+                input_index--; 
                 if (cursor_x > 0) {
                     cursor_x--;
                 } else if (cursor_y > 0) {
@@ -1190,12 +1129,12 @@ void keyboard_handler() {
                 SCREEN_BUFFER[pos] = ' ';
                 SCREEN_BUFFER[pos + 1] = 0x07;
             }
-        } else if (ascii == '\n') { // Enter
-            process_input(); // Procesar el comando ingresado
-        } else if (ascii) { // Otros caracteres
-            if (input_index < INPUT_BUFFER_SIZE - 1) { // Evitar desbordamiento
+        } else if (ascii == '\n') { 
+            process_input();
+        } else if (ascii) { 
+            if (input_index < INPUT_BUFFER_SIZE - 1) {
                 input_buffer[input_index++] = ascii;
-                put_char(ascii); // Escribir carácter en pantalla
+                put_char(ascii); 
             }
         }
     }
@@ -1259,14 +1198,14 @@ unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigne
     unsigned int i = (line * 80 * 2);
 
     while (*message != 0) {
-        vidmem[i] = *message;      // Escribe el carácter en memoria de video
+        vidmem[i] = *message;      
         message++;
         i++;
-        vidmem[i] = color;         // Escribe el color
+        vidmem[i] = color;         
         i++;
     }
 
-    return 1; // Indica éxito
+    return 1; 
 }
 
 
@@ -1303,22 +1242,21 @@ unsigned int k_printf_center(char *message, unsigned int line, unsigned int colo
     unsigned int i = 0;
     unsigned int length = 0;
 
-    // Calcular la longitud del mensaje
+    
     char *ptr = message;
     while (*ptr != 0) {
         length++;
         ptr++;
     }
 
-    // Calcular el número de espacios en blanco necesarios para centrar
     unsigned int padding = (80 - length) / 2;
 
-    // Calcular la posición inicial en memoria de video
+   
     i = (line * 80 * 2) + (padding * 2);
 
-    // Escribir el mensaje en la memoria de video
+    
     while (*message != 0) {
-        if (*message == '\n') { // Manejo de nueva línea
+        if (*message == '\n') { 
             line++;
             padding = (80 - length) / 2;
             i = (line * 80 * 2) + (padding * 2);
