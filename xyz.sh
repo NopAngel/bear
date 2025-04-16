@@ -1,3 +1,15 @@
+
+#
+#
+#   xyz.sh - manipulates log methods
+#  (C) 2025 Angel Nieto/NopAngel <angelnieto1402@gmail.com>
+#
+#           This code is licenced under the APACHE 2.0
+#
+
+
+
+
 # Constants for the simulated system
 REGISTER_SIZE <- 64         # Size of each register in bits
 BUFFER_LIMIT <- 512         # Maximum size of the bit buffer in bits
