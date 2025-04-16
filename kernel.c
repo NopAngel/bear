@@ -46,51 +46,6 @@ typedef unsigned long long uint64_t;
 #define LICENSE_X_KERNEL "Apache 2.0"
 #define M_N_KERNEL "BearOS (x86)"
 
-/*
-*   Explanation: These "#define's" act as a kind of credit, which is what it is used for to note.
-*
-*   - M = Max
-*   - X = 10
-*   - N = Name
-*/ 
-
-
-
-// K_PRINTF WITH FONT!?!??!?!?!? LOLLLLLLLLLLL - YEAH, I was doing it, but i was too lazy lol.
-
-/*
-*
-*
-*
-*
-*
-*
-*
-*
-*
-*
-*
-*   The website has just been created, I left this comment just in case 
-*you see/read this, go to the website, there is the documentation, and more information 
-*about BearOS, take a look and see :)
-*
-*  https://bearos.vercel.com/ - Yes, it is hosted by VERCEL, they don't ask for much HEHE
-*
-*
-*
-*
-
-*
-
-*
-*
-*
-*
-*
-*/
-
-
-
 
 
 
@@ -98,9 +53,6 @@ typedef unsigned long long uint64_t;
 void free_shared_memory(void *address);
 void init_shared_memory();
 void kernel_panic(const char *message);
-
-
-// SHARED MEMORY'S
 
 
 
