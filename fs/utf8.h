@@ -1,3 +1,13 @@
+/*
+*
+*   utf8-core.h - a generic file for utf core
+*
+*  (C) 2025 Angel Nieto/NopAngel <angelnieto1402@gmail.com>
+*
+*           This code is licenced under the APACHE 2.0
+*/
+
+
 #ifndef UTF8_H
 #define UTF8_H
 
