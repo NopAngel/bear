@@ -1,8 +1,18 @@
-#include "utf8.h"  // Archivo de cabecera personalizado
+/*
+*
+*   utf8-core.c - a generic file for utf8 core
+*
+*  (C) 2025 Angel Nieto/NopAngel <angelnieto1402@gmail.com>
+*
+*           This code is licenced under the APACHE 2.0
+*/
+
+
+#include "utf8.h"  
 
 struct unicode_map {
     unsigned int version;
-    // Otras configuraciones del mapa de caracteres UTF-8
+
 };
 
 struct qstr {
@@ -10,19 +20,19 @@ struct qstr {
     size_t len;
 };
 
-// Validar una cadena UTF-8
+
 int utf8_validate(const struct unicode_map *um, const struct qstr *str) {
     size_t index = 0;
     while (index < str->len) {
         int code_point = utf8_decode(str->name, &index, str->len);
         if (code_point == -1) {
-            return -1;  // Cadena inválida
+            return -1;  
         }
     }
-    return 0;  // Cadena válida
+    return 0;  
 }
 
-// Comparar dos cadenas en UTF-8
+
 int utf8_strncmp(const struct unicode_map *um, const struct qstr *s1, const struct qstr *s2) {
     size_t index1 = 0, index2 = 0;
 
@@ -31,17 +41,17 @@ int utf8_strncmp(const struct unicode_map *um, const struct qstr *s1, const stru
         int code2 = utf8_decode(s2->name, &index2, s2->len);
 
         if (code1 == -1 || code2 == -1) {
-            return -1;  // Error en la decodificación
+            return -1;  
         }
         if (code1 != code2) {
-            return 1;  // Las cadenas son diferentes
+            return 1;  
         }
     }
 
     if (index1 == s1->len && index2 == s2->len) {
-        return 0;  // Las cadenas son iguales
+        return 0;  
     }
-    return 1;  // Una cadena es más corta que la otra
+    return 1;  
 }
 
 // Normalizar cadenas UTF-8
@@ -51,7 +61,7 @@ int utf8_normalize(const struct unicode_map *um, const struct qstr *str, char *d
     while (index < str->len && dest_index < dlen) {
         int code_point = utf8_decode(str->name, &index, str->len);
         if (code_point == -1) {
-            return -1;  // Error en la decodificación
+            return -1;  
         }
         dest[dest_index++] = (char)code_point;  // Copiar el carácter normalizado
     }
