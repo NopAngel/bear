@@ -1,3 +1,7 @@
+
+
+
+
 section .data
 ; Definición de datos y logs
 log_message db "Log entry: Operation completed successfully.", 0
