@@ -663,7 +663,7 @@ void put_char(char c) {
 
 
 
-
+/*
 
 
 
@@ -698,7 +698,7 @@ void process_input_logged() {
   
     input_index = 0;
     cursor_x = 0;
-}
+}*/
 
 
 
@@ -725,38 +725,7 @@ void process_input() {
     if (strcmp(input_buffer, "test") == 0) {
         k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
-    }else if (strcmp(input_buffer, "view IMPORTANT.md") == 0) {
-        k_clear_screen();
-        cursor_y = 0;
-        k_printf_center("IMPORTANT.md", cursor_y++, BLUE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("Hola! Soy NopAngel (si, el creador de este kernel)", cursor_y++, WHITE_TXT);
-        k_printf("Y solo era para decir que si tienes alguna duda", cursor_y++, WHITE_TXT);
-        k_printf("De algun comando, lo podras ver en 'help'", cursor_y++, WHITE_TXT);
-        k_printf("Espero disfrutes el kernel!", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-        k_printf("================================================================================", cursor_y++, GRAY_TXT);
-
-        k_printf("AUTOR: NopAngel", cursor_y++, GRAY_TXT);
-        k_printf("LICENSE: APACHE 2.0", cursor_y++, GRAY_TXT);
-        k_printf("GITHUB: github.com/NopAngel/bear", cursor_y++, GRAY_TXT);
-        k_printf("", cursor_y++, WHITE_TXT);
-
-        k_printf("================================================================================", cursor_y++, GRAY_TXT);
-
-
-        cursor_y++;
-    } 
+    }
 
     
 else if (strcmp(input_buffer, "reboot") == 0) {
@@ -765,7 +734,7 @@ else if (strcmp(input_buffer, "reboot") == 0) {
 
 
     k_clear_screen();
-    k_printf("Reiniciando el sistema en 5 segundos...", 1, RED_TXT);
+    k_printf("Resetting the system in 5 seconds...", 1, RED_TXT);
 
 
     for (volatile int i = 0; i < 50000000; i++) {      }
@@ -778,7 +747,7 @@ else if (strcmp(input_buffer, "reboot") == 0) {
     );
 
    
-    k_printf("Apagando el sistema en 5 segundos...", 0, RED_TXT);
+    k_printf("Shutting the system in 5 seconds...", 0, RED_TXT);
 
     for (volatile int i = 0; i < 50000000; i++) { }
 
@@ -797,7 +766,10 @@ else if (strcmp(input_buffer, "reboot") == 0) {
         k_printf("  What is BearOS? BearOS is an operating system (kernel) designed for programmers \n (both new and advanced). It's inspired by Linux, but with \n easier-to-understand commands and more. The creator \n (NopAngel, also known as Angel Nieto) was inspired by Linux when creating this OS (kernel). \n He spent almost 2 years developing it. \n Even though he doesn't have much experience creating an OS, \n he tried. Just take inspiration from this. If he could create an OS (kernel) without much experience in C and programming, you can too :) Happy day/afternoon/evening, coder!", cursor_y++, WHITE_TXT);
 
     
-    }else if (strcmp(input_buffer, "about") == 0) {
+    }
+  
+    
+    else if (strcmp(input_buffer, "about") == 0) {
         k_clear_screen();
         cursor_y = 0;
         k_printf_center("about", cursor_y++, WHITE_TXT);
@@ -807,6 +779,12 @@ else if (strcmp(input_buffer, "reboot") == 0) {
         k_printf_center("Copyright @ 2024-2025", cursor_y++, WHITE_TXT);
         k_printf_center("NopAngel & contributors.", cursor_y++, GRAY_TXT);
     
+    }
+
+    else if (strncmp(input_buffer, "print ", 6) == 0) {
+        cursor_y = cursor_y + 1;
+        const char *value = input_buffer + 6;
+        k_printf(value, cursor_y++, WHITE_TXT);
     }
 
 
