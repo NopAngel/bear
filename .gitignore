@@ -1,3 +1,14 @@
+#
+#
+#   .gitignore - ignoring files
+#
+#  (C) 2025 Angel Nieto/NopAngel <angelnieto1402@gmail.com>
+#
+#           This code is licenced under the APACHE 2.0
+#
+
+
+
 #build
 *.o
 *.iso
@@ -5,3 +16,7 @@ kernel
 kc.o
 kasm.o
 kernel
+
+#editor
+.vimpluggins
+.vimeditor
