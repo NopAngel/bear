@@ -1,19 +1,10 @@
-
 /*
-				B - E - A - R      OS
-
-						LICENSE: APACHE 2.0
-						Author: NopAngel
-						Repository: NopAngel
-
-           - What you're seeing is the (main) code that makes the kernel work.
-                (Libraries and similar things are also imported from the project.)
-
-             This project is for funny purposes only and has its own commercial license.
-                        Thanks for watching! :)
-
-
-     @Copyright 2024-2025 - BearOS - PAGE: https://bearos.vercel.com/ 
+*
+*   kernel.c - the main file that run's the entire code ( It is the main one, which calls all the functions )
+*
+*  (C) 2025 Angel Nieto/NopAngel <angelnieto1402@gmail.com>
+*
+*           This code is licenced under the APACHE 2.0
 */
 
 
