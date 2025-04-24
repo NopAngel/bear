@@ -9,12 +9,3 @@
 
 
 // WARNING: I know this needs fixing, but I'm too lazy. I'll do it later. :)
-
-
-
-
-void kernelPanic(char * reasons) {
-	asm volatile("cli");
-	k_printf(reasons, 0x04, 0);
-}
-

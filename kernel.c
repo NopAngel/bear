@@ -30,7 +30,9 @@ void k_clear_screen();
 #include "reboot.h"
 #include "include/multiboot.h"
 #include "shutdown.h"
-#include "panic/panic.h"
+#include "include/itoa.h"
+#include "cpu/get_cpu_info.h"
+
 
 void set_background_color(const char *color_name);
 unsigned int k_printf(char *message, unsigned int line, unsigned int color);
@@ -52,7 +54,11 @@ typedef unsigned long long uint64_t;
 
 void free_shared_memory(void *address);
 void init_shared_memory();
-void kernel_panic(const char *message);
+void kernel_panic() {
+    asm volatile("cli");
+    k_printf("Fatal Exception: KERNEL PANIC", 0, RED_TXT);
+    asm volatile("hlt");
+};
 
 
 
@@ -210,32 +216,35 @@ void stop_tone() {
 #include "include/keyboard.h"
 #include "include/disk.h"
 #include "include/INFO.h"
-void W_MSG_NOT() {
-    k_printf("hi user! :)", 0, WHITE_TXT);
-    k_printf("please logged", 1, WHITE_TXT);
+
+void delay(int time) {
+	volatile long count = 1000000 * time;
+	while(count--); 
 }
+
+void CR_W() {
+	k_clear_screen();
+	k_printf("[BEAR] Bear packs loaded",0, GREEN_TXT);
+	k_printf("[BEAR] Init scripts",1, GREEN_TXT);
+	k_printf("[BEAR] APM Manager inited",2, GREEN_TXT);
+	k_printf("[BEAR] Terminal prepared",3, GREEN_TXT);
+	k_printf("[BEAR] Keyboard port inited",4, GREEN_TXT);
+	k_printf("[BEAR] Sound inited port",5, GREEN_TXT);
+	k_printf("[BEAR] VGA Resolution PREPARED",6, GREEN_TXT);
+	k_printf("[BEAR] Keyboard Scanned code complete",7, GREEN_TXT);
+	k_printf("[BEAR] Commands PREPARED",8, GREEN_TXT);
+	k_printf("-----------------------------------",9, WHITE_TXT);
+	k_printf_center("All packages and services are ready ",11, GREEN_TXT);
+	delay(500);
+	k_clear_screen();
+}
+
 
 void W_MSG() {
     k_clear_screen();
-    k_printf_center("+--------------------------------------------------+", 0, WHITE_TXT); 
-    k_printf_center("|                                                  |", 1, WHITE_TXT); 
-    k_printf_center("|                                                  |", 2, WHITE_TXT); 
-    k_printf_center("|        1000001    00000   1000    10000          |", 3, WHITE_TXT); 
-    k_printf_center("|       10    00   00      10  00  10   00         |", 4, WHITE_TXT); 
-    k_printf_center("|       0000010    000000  00  00  00   0          |", 5, WHITE_TXT); 
-    k_printf_center("|       00     0   00      000000  00001           |", 6, WHITE_TXT); 
-    k_printf_center("|       00   01    10   00 00  00  00 00           |", 7, WHITE_TXT); 
-    k_printf_center("|        00000      0000   10  01  01  10          |", 8, WHITE_TXT); 
-    k_printf_center("|                                                  |", 9, WHITE_TXT); 
-    k_printf_center("|                                                  |", 10, WHITE_TXT); 
-    k_printf_center("|                                                  |", 11, WHITE_TXT); 
-    k_printf_center("|                                                  |", 12, WHITE_TXT); 
-    k_printf_center("|            BEAR: OS kernel (2.0)                 |", 13, WHITE_TXT); 
-    k_printf_center("|                                                  |", 14, WHITE_TXT); 
-    k_printf_center("|                                                  |", 15, WHITE_TXT); 
-    k_printf_center("+--------------------------------------------------+", 16, WHITE_TXT); 
-    k_printf_center("AUTHOR: NopAngel", 17, ORANGE_TXT); 
-
+    k_printf_center("+--------------------------------------------------+", 0, ORANGE_TXT); 
+    k_printf_center("Bear OS - Author: NopAngel", 1, WHITE_TXT); 
+    k_printf_center("+--------------------------------------------------+", 2, ORANGE_TXT); 
 
 }
 
@@ -475,7 +484,7 @@ void list_items() {
 
 
     if (directory_count == 0 && file_count == 0) {
-        k_printf("No hay contenido.\n", 1, WHITE_TXT);
+        k_printf("No content.\n", 1, WHITE_TXT);
 
     }
 }
@@ -494,19 +503,19 @@ void W_MSG();
 int mkdir(const char *dirname) {
 
     if (directory_count >= MAX_DIRECTORIES) {
-        k_printf("Error: No se pueden crear más directorios.\n", 0, RED_TXT);
+        k_printf("Error: No more directories can be created.\n", 0, RED_TXT);
         return -1;
     }
 
 
     if (strlen(dirname) >= MAX_NAME_LENGTH) {
-        k_printf("Error: El nombre del directorio es demasiado largo.\n", 0, RED_TXT);
+        k_printf("Error: The name is long.\n", 0, RED_TXT);
         return -1;
     }
 
     for (unsigned int i = 0; i < directory_count; i++) {
         if (strcmp(directory_table[i].name, dirname) == 0) {
-            k_printf("Error: El directorio ya existe.\n", 0, RED_TXT);
+            k_printf("Error: The directory already exists.\n", 0, RED_TXT);
             return -1;
         }
     }
@@ -517,7 +526,7 @@ int mkdir(const char *dirname) {
     directory_table[directory_count].size = 1; 
     directory_count++; 
 
-    k_printf("Directorio creado: ", 0, GREEN_TXT);
+    k_printf("Directory's created: ", 0, GREEN_TXT);
     k_printf_no_newline(dirname, 0, WHITE_TXT);
     k_printf_no_newline("\n", 0, WHITE_TXT);
 
@@ -606,58 +615,58 @@ void put_char(char c) {
 
 
 
-/*
+
+
+unsigned int get_ram_size() {
+    unsigned int ram_size = 0x100000; 
+    return ram_size / 1024; 
+}
+
+unsigned int get_disk_usage() {
+    unsigned char usage;
+    __asm__ __volatile__(
+        "xor %%dx, %%dx\n\t"     
+        "mov $0x1F0, %%dx\n\t"   
+        "in %%dx, %%al\n\t"    
+        "mov %%al, %0\n\t"     
+        : "=r"(usage)
+        :
+        : "dx", "al"
+    );
+    return (unsigned int)usage * 512; 
+}
+
+
+unsigned int safe_mod(unsigned int dividend, unsigned int divisor) {
+    return dividend - (divisor * (dividend / divisor));
+}
 
 
 
-void process_input_logged() {
-    input_buffer[input_index] = '\0'; 
+void display_stats() {
+    char buffer[32];
+    unsigned int cpu_cycles = get_cpu_cycles();
+    unsigned int ram_usage = get_ram_size(); 
+    unsigned int disk_usage = get_disk_usage();
 
+    k_printf("********************************", cursor_y++, GREEN_TXT);
+    k_printf("*       SYSTEM STATISTICS      *", cursor_y++, GREEN_TXT);
+    k_printf("********************************", cursor_y++, GREEN_TXT);
 
-    if (strcmp(input_buffer, "test") == 0) {
-        k_printf("Hello, World!", cursor_y, GREEN_TXT); 
-        cursor_y++;
-    } else if (strcmp(input_buffer, "bearfetch") == 0) {
-        k_clear_screen();
-        cursor_y = 0;
-        k_printf(" BEAR OS ", cursor_y++, ORANGE_TXT);
-        k_printf("AUTHOR: NopAngel", cursor_y++, GRAY_TXT);
-        k_printf("Repository: github.com/NopAngel/bear", cursor_y++, RED_TXT);
-    } else if(strcmp(input_buffer, "bear") == 0) {
-        k_printf("logged! welcome user bear!!!", 6, WHITE_TXT);
-        LOGIN = 1;
-        k_clear_screen();
-        W_MSG();
-    }
-     else {
-        k_printf("Comando no reconocido.", cursor_y++, RED_TXT); 
-    }
+    k_printf("CPU Cycles:", cursor_y++, GREEN_TXT);
+    itoa(cpu_cycles, buffer, 10);
+    k_printf(buffer, cursor_y++, AQUA_TXT);
 
+    k_printf("RAM Usage (MB):", cursor_y++, GREEN_TXT);
+    itoa(ram_usage, buffer, 10);
+    k_printf(buffer, cursor_y++, AQUA_TXT);
 
-    if (cursor_y >= SCREEN_ROWS) {
-        scroll_screen();
-    }
+    k_printf("Disk Usage (MB):", cursor_y++, GREEN_TXT);
+    itoa(disk_usage, buffer, 10);
+    k_printf(buffer, cursor_y++, AQUA_TXT);
 
-  
-    input_index = 0;
-    cursor_x = 0;
-}*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    k_printf("********************************", cursor_y++, GREEN_TXT);
+}
 
 
 
@@ -710,6 +719,13 @@ else if (strcmp(input_buffer, "reboot") == 0) {
 
     
     }
+
+    else if (strcmp(input_buffer, "stats") == 0) {
+    	k_clear_screen();
+    	cursor_y = 0;
+        display_stats();
+    	
+    }
   
     
     else if (strcmp(input_buffer, "about") == 0) {
@@ -718,7 +734,7 @@ else if (strcmp(input_buffer, "reboot") == 0) {
         k_printf_center("about", cursor_y++, WHITE_TXT);
         k_printf_center("bear OS", cursor_y++, WHITE_TXT);
         k_printf_center("The Bear operating system.", cursor_y++, WHITE_TXT);
-        k_printf_center("v2", cursor_y++, WHITE_TXT);
+        k_printf_center("v2", cursor_y++, BLUE_TXT);
         k_printf_center("Copyright @ 2024-2025", cursor_y++, WHITE_TXT);
         k_printf_center("NopAngel & contributors.", cursor_y++, GRAY_TXT);
     
@@ -752,21 +768,7 @@ else if (strcmp(input_buffer, "reboot") == 0) {
 
 
 
-    else if (strcmp(input_buffer, "help") == 0) {
-        k_clear_screen();
-        cursor_y = 10;
-        k_printf("HELP COMMANDS", cursor_y++, ORANGE_TXT);
-        k_printf("cd: Te translada a diferente carpeta (parametros: nombre de carpeta)", cursor_y++, WHITE_TXT); 
-        k_printf("mkdir: Crea una carpeta (parametros: nombre de carpeta)", cursor_y++, WHITE_TXT); 
-        k_printf("rmd: Elimina una carpeta (parametros: nombre de carpeta)", cursor_y++, WHITE_TXT); 
-        k_printf("rm: Elimina un archivo (parametros: nombre de archivo)", cursor_y++, WHITE_TXT); 
-        k_printf("bearfetch: Muestra la informacion de tu PC (parametros: ninguno)", cursor_y++, WHITE_TXT); 
-        k_printf("test: Muestra un mensaje de 'Hello, world!' (parametros: ninguno)", cursor_y++, WHITE_TXT); 
-        k_printf("help: Muestra este mensaje de ayuda (parametros: ninguno)", cursor_y++, WHITE_TXT); 
-        k_printf("sh: Muestra la version de la terminal de este kernel (parametros: ninguno)", cursor_y++, WHITE_TXT); 
-        k_printf("man: Muestra la informacion detallada de archivo (parametros: nombre del archivo)", cursor_y++, WHITE_TXT); 
-        k_printf("touch: Crea un archivo (parametros: nombre del archivo, con su respectiva extension)", cursor_y++, WHITE_TXT); 
-    } else if (strncmp(input_buffer, "setbg/", 6U) == 0) {
+     else if (strncmp(input_buffer, "setbg/", 6U) == 0) {
     const char *color_name = input_buffer + 6; 
     set_background_color(color_name);         
 }
@@ -782,6 +784,8 @@ else if (strcmp(input_buffer, "repo") == 0) {
         mkdir(dirname);
     }
 
+
+
     else if (strncmp(input_buffer, "touch ", 6) == 0) {
         const char *filename = input_buffer + 6;
         cursor_y = 20;
@@ -789,22 +793,7 @@ else if (strcmp(input_buffer, "repo") == 0) {
         touch(filename, "");
     }else if (strcmp(input_buffer, "pwd") == 0) {
         k_printf("*/home/", cursor_y++, GREEN_TXT);
-    } else if (strncmp(input_buffer, "man mkdir", 6) == 0) {
-        cursor_y = cursor_y + 1;
-        k_printf("MKDIR:", cursor_y++, BLUE_TXT);
-        k_printf("Este comando nos ayuda para crear una carpeta", cursor_y++, WHITE_TXT);
-        k_printf("Solo tienes que poner: mkdir (nombre_del_archivo)", cursor_y++,WHITE_TXT);
-    }else if (strncmp(input_buffer, "man touch", 6) == 0) {
-        cursor_y = cursor_y + 1;
-        k_printf("TOUCH:", cursor_y++, BLUE_TXT);
-        k_printf("Este comando nos ayuda para crear un archivo", cursor_y++, WHITE_TXT);
-        k_printf("Solo tienes que poner: touch (nombre_del_archivo.su_respectiva_extension)", cursor_y++,WHITE_TXT);
-    }else if (strncmp(input_buffer, "man test", 6) == 0) {
-        cursor_y = cursor_y + 1;
-        k_printf("TEST:", cursor_y++, BLUE_TXT);
-        k_printf("Este comando nos ayuda a proba si esta corriendo el KERNEL", cursor_y++, WHITE_TXT);
-        k_printf("Correctamente, uso: 'test', es totalmente sin parametros.", cursor_y++,WHITE_TXT);
-    }
+    } 
 
     else if (strcmp(input_buffer, "ls") == 0) {
         k_clear_screen();
@@ -812,22 +801,16 @@ else if (strcmp(input_buffer, "repo") == 0) {
         list_items();
     }
 
-    else if (strcmp(input_buffer, "bear") == 0) {
-        k_printf("KERNEL PANIC: OH NO!!! Los BEARS han tomado el control (FATAL ERROR, yeah esto es una broma jeje)", cursor_y++, RED_TXT);
-    }
+   
      else if (strcmp(input_buffer, "clear") == 0) {
         k_clear_screen();
         cursor_y = 0; 
-    }else if (strcmp(input_buffer, "") == 0) {
-        k_clear_screen();
-        cursor_y = cursor_y + 1;
-        
     }
 else if (strcmp(input_buffer, "sh") == 0) {
         k_printf("BearSH v1.3", cursor_y++, GREEN_TXT);
         }
      else {
-        k_printf("Comando no reconocido.", cursor_y++, RED_TXT); 
+        k_printf("Command not found.", cursor_y++, RED_TXT); 
     }
 
 
@@ -968,9 +951,7 @@ void keyboard_handler_logged() {
                 SCREEN_BUFFER[pos] = ' ';
                 SCREEN_BUFFER[pos + 1] = 0x07;
             }
-        } else if (ascii == '\n') { 
-            process_input_logged(); 
-        } else if (ascii) { 
+        }else if (ascii) { 
             if (input_index < INPUT_BUFFER_SIZE - 1) { 
                 input_buffer[input_index++] = ascii;
                 put_char(ascii); 
@@ -1067,11 +1048,8 @@ void keyboard_handler() {
 
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
 {
-    mkdir("scripts");
-    mkdir("system");
-    touch("IMPORTANT.md", "haha");
 
-    k_clear_screen();
+	CR_W();
 
 
     cursor_x = 0;
@@ -1219,37 +1197,3 @@ void W_MSG(){
 
 
 
-/*
-*
-*
-*
-*
-*		 FOOTER - COMMENTARY FOR DEVELOPERS
-*
-*
-*
-*
-*
-*
-*		kernel.c:
-*			- The code editor used for the ESET kernel is: badeditor. This editor was created by myself 
-*                    (it's a code editor in the terminal), which basically allows you to write much more comfortably and quickly.
-*            brings support to:
-*
-*			- C
-*
-*			- C++
-*
-*			- Assembly
-*	
-*			- SH (Shell Script)
-*
-*			- Pascal
-*
-*			- LD/linker script (just the highlight)
-*
-*
-*	It has quite a few things, if you want you can take a look at each of them, it will soon be published on my GitHub,
-*                         and it will be open source :)
-*	
-*/
