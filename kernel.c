@@ -24,7 +24,7 @@ int input_index = 0;
 
 volatile unsigned char last_scancode = 0;
 
-int LOGIN = 1;
+int logged;
 void k_clear_screen();
 #include "fs/k_printf.h"
 #include "reboot.h"
@@ -32,6 +32,12 @@ void k_clear_screen();
 #include "shutdown.h"
 #include "include/itoa.h"
 #include "cpu/get_cpu_info.h"
+
+
+
+
+
+
 
 
 void set_background_color(const char *color_name);
@@ -54,12 +60,7 @@ typedef unsigned long long uint64_t;
 
 void free_shared_memory(void *address);
 void init_shared_memory();
-void kernel_panic() {
-    asm volatile("cli");
-    k_printf("Fatal Exception: KERNEL PANIC", 0, RED_TXT);
-    asm volatile("hlt");
-};
-
+void kernel_panic();
 
 
 
@@ -152,10 +153,6 @@ CANT USE:
 
 
 
-
-
-
-
 // DRIVERS
 
 
@@ -224,21 +221,58 @@ void delay(int time) {
 
 void CR_W() {
 	k_clear_screen();
-	k_printf("[BEAR] Bear packs loaded",0, GREEN_TXT);
+	k_printf("[BEAR] Bear packs loading",0, GREEN_TXT);
+    delay(50);
+    k_printf("[BEAR] Bear packs loaded.",0, GREEN_TXT);
+
 	k_printf("[BEAR] Init scripts",1, GREEN_TXT);
+
+
 	k_printf("[BEAR] APM Manager inited",2, GREEN_TXT);
-	k_printf("[BEAR] Terminal prepared",3, GREEN_TXT);
+
+
+	k_printf("[BEAR] Terminal preparing",3, GREEN_TXT);
+    delay(50);
+    k_printf("[BEAR] Terminal prepared.",3, GREEN_TXT);
+
+
 	k_printf("[BEAR] Keyboard port inited",4, GREEN_TXT);
+    delay(50);
+
 	k_printf("[BEAR] Sound inited port",5, GREEN_TXT);
+
+
 	k_printf("[BEAR] VGA Resolution PREPARED",6, GREEN_TXT);
-	k_printf("[BEAR] Keyboard Scanned code complete",7, GREEN_TXT);
-	k_printf("[BEAR] Commands PREPARED",8, GREEN_TXT);
+    delay(50);
+    k_printf("[BEAR] VGA Resolution PREPARED",6, GREEN_TXT);
+
+
+	k_printf("[BEAR] Keyboard Scanned loading",7, GREEN_TXT);
+    delay(50);
+    k_printf("[BEAR] Keyboard Scanned loaded.",7, GREEN_TXT);
+
+
+	k_printf("[BEAR] Commands PREPARING",8, GREEN_TXT);
+    delay(50);
+    k_printf("[BEAR] Commands PREPARED..",8, GREEN_TXT);
+
 	k_printf("-----------------------------------",9, WHITE_TXT);
 	k_printf_center("All packages and services are ready ",11, GREEN_TXT);
 	delay(500);
 	k_clear_screen();
+    k_printf_center("BearOS starting - Author: NopAngel", 12, ORANGE_TXT);
+    delay(300);
 }
 
+
+void LOGIN_W() {
+    k_clear_screen();
+    k_printf_center("****************************", 9, WHITE_TXT);
+
+    k_printf_center("BearOS logged screen", 10, ORANGE_TXT);
+    k_printf_center("Username and Password", 11, WHITE_TXT);
+    k_printf_center("****************************", 13, WHITE_TXT);
+}
 
 void W_MSG() {
     k_clear_screen();
@@ -364,6 +398,7 @@ typedef struct {
 
 DirectoryEntry directory_table[MAX_DIRECTORIES];
 unsigned int directory_count = 0;
+
 void create_new_file(const char *filename, const char *content) {
     custom_strcpy(file_table[file_count].name, filename);   
     custom_strcpy(file_table[file_count].content, content); 
@@ -394,17 +429,6 @@ void update_file_content(const char *filename, const char *new_content) {
 
 
 
-void show_file_content(const char *filename) {
-    for (unsigned int i = 0; i < file_count; i++) {
-        if (custom_strcmp(file_table[i].name, filename) == 0) { 
-            k_printf_no_newline(filename, 0, WHITE_TXT); 
-            k_printf_no_newline(file_table[i].content, 0, WHITE_TXT); 
-            return; 
-        }
-    }
-   
-    k_printf("Archivo no encontrado", 0, RED_TXT);
-}
 
 
 
@@ -447,7 +471,7 @@ void set_background_color(const char *color_name) {
     } else if (strcmp(color_name, "darkblue") == 0) {
         current_bg_color = DARKBLUE_BG;
     } else {
-        k_printf("Error: Color no reconocido.\n", 0, RED_TXT);
+        k_printf("Error: Color not found.\n", 0, RED_TXT);
         return;
     }
 
@@ -459,45 +483,12 @@ void set_background_color(const char *color_name) {
 }
 
 
-void list_items() {
-    int cursor_y = 0;
-
-
-    if (directory_count > 0) {
-        k_printf("Directorios:\n", cursor_y++, BLUE_TXT);
-        for (unsigned int i = 0; i < directory_count; i++) {
-            k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
-            k_printf_no_newline(directory_table[i].name, cursor_y++, WHITE_TXT);
-        }
-    }
-    cursor_y = cursor_y + 2;
-
-
-    if (file_count > 0) {
-        k_printf("Archivos:\n", cursor_y++, GREEN_TXT);
-        for (unsigned int i = 0; i < file_count; i++) {
-            k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
-            k_printf_no_newline(file_table[i].name, cursor_y++, WHITE_TXT);
-
-        }
-    }
-
-
-    if (directory_count == 0 && file_count == 0) {
-        k_printf("No content.\n", 1, WHITE_TXT);
-
-    }
-}
 
 
 
 
 
 void W_MSG();
-
-
-
-
 
 
 int mkdir(const char *dirname) {
@@ -532,6 +523,59 @@ int mkdir(const char *dirname) {
 
     return 0;
 }
+
+void show_file_content(const char *filename) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (custom_strcmp(file_table[i].name, filename) == 0) { 
+            k_printf_no_newline(filename, 0, WHITE_TXT); 
+            k_printf_no_newline(file_table[i].content, 0, WHITE_TXT); 
+            return; 
+        }
+    }
+   
+    k_printf("File not found", 0, RED_TXT);
+}
+
+
+void list_items() {
+    int cursor_y = 0;
+
+
+    if (directory_count > 0) {
+        k_printf("Directory's:\n", cursor_y++, BLUE_TXT);
+        for (unsigned int i = 0; i < directory_count; i++) {
+            k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
+            k_printf_no_newline(directory_table[i].name, cursor_y++, WHITE_TXT);
+        }
+    }
+    cursor_y = cursor_y + 2;
+
+
+    if (file_count > 0) {
+        k_printf("File's:\n", cursor_y++, GREEN_TXT);
+        for (unsigned int i = 0; i < file_count; i++) {
+            k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
+            k_printf_no_newline(file_table[i].name, cursor_y++, WHITE_TXT);
+
+        }
+    }
+
+
+    if (directory_count == 0 && file_count == 0) {
+        k_printf("No content.\n", 1, WHITE_TXT);
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -668,6 +712,23 @@ void display_stats() {
     k_printf("********************************", cursor_y++, GREEN_TXT);
 }
 
+void process_input_logged() {
+    input_buffer[input_index] = '\0'; 
+
+    if (strcmp(input_buffer, "root123") == 0) {
+        cursor_y++;
+        logged = 1;
+        W_MSG();
+
+    } else {
+        cursor_y++;
+        k_printf("Password incorrect ",cursor_y++, RED_TXT);
+    }
+
+    cursor_x = 0;
+    input_index = 0;
+
+}
 
 
 void process_input() {
@@ -708,17 +769,7 @@ else if (strcmp(input_buffer, "reboot") == 0) {
 
 
 
-     else if (strcmp(input_buffer, "inf") == 0) {
-        k_clear_screen();
-        cursor_y = 10;
-        k_printf("ANGEL - BEAR OS", cursor_y++, WHITE_TXT);
-        k_printf("B E A R OS [2024-2025]", cursor_y++, WHITE_TXT);
-        k_printf("EP. 1: HISTORY AND CONTEXT.", cursor_y++, WHITE_TXT);
-        k_printf(" - CONTEXT:", cursor_y++, WHITE_TXT);
-        k_printf("  What is BearOS? BearOS is an operating system (kernel) designed for programmers \n (both new and advanced). It's inspired by Linux, but with \n easier-to-understand commands and more. The creator \n (NopAngel, also known as Angel Nieto) was inspired by Linux when creating this OS (kernel). \n He spent almost 2 years developing it. \n Even though he doesn't have much experience creating an OS, \n he tried. Just take inspiration from this. If he could create an OS (kernel) without much experience in C and programming, you can too :) Happy day/afternoon/evening, coder!", cursor_y++, WHITE_TXT);
-
-    
-    }
+  
 
     else if (strcmp(input_buffer, "stats") == 0) {
     	k_clear_screen();
@@ -727,6 +778,7 @@ else if (strcmp(input_buffer, "reboot") == 0) {
     	
     }
   
+
     
     else if (strcmp(input_buffer, "about") == 0) {
         k_clear_screen();
@@ -745,6 +797,27 @@ else if (strcmp(input_buffer, "reboot") == 0) {
         const char *value = input_buffer + 6;
         k_printf(value, cursor_y++, WHITE_TXT);
     }
+
+    else if (strncmp(input_buffer, "mkdir ", 6) == 0) {
+        const char *dirname = input_buffer + 6;
+        cursor_y = cursor_y + 1;
+
+        mkdir(dirname);
+    }
+    else if (strncmp(input_buffer, "touch ", 6) == 0) {
+        const char *filename = input_buffer + 6;
+        cursor_y = 20;
+
+        touch(filename, "");
+    }
+    else if (strcmp(input_buffer, "ls") == 0) {
+        k_clear_screen();
+        cursor_y = 20;
+        list_items();
+    }
+    
+
+
 
 
     else if (strncmp(input_buffer, "print ", 6) == 0) {
@@ -777,29 +850,13 @@ else if (strcmp(input_buffer, "repo") == 0) {
     }else if (strcmp(input_buffer, "welcome") == 0 || strcmp(input_buffer, "splash") == 0) {
         k_clear_screen();
         W_MSG();
-    }else if (strncmp(input_buffer, "mkdir ", 6) == 0) {
-        const char *dirname = input_buffer + 6;
-        cursor_y = 20;
-
-        mkdir(dirname);
     }
 
-
-
-    else if (strncmp(input_buffer, "touch ", 6) == 0) {
-        const char *filename = input_buffer + 6;
-        cursor_y = 20;
-
-        touch(filename, "");
-    }else if (strcmp(input_buffer, "pwd") == 0) {
+else if (strcmp(input_buffer, "pwd") == 0) {
         k_printf("*/home/", cursor_y++, GREEN_TXT);
     } 
 
-    else if (strcmp(input_buffer, "ls") == 0) {
-        k_clear_screen();
-        cursor_y = 20;
-        list_items();
-    }
+    
 
    
      else if (strcmp(input_buffer, "clear") == 0) {
@@ -951,14 +1008,18 @@ void keyboard_handler_logged() {
                 SCREEN_BUFFER[pos] = ' ';
                 SCREEN_BUFFER[pos + 1] = 0x07;
             }
-        }else if (ascii) { 
-            if (input_index < INPUT_BUFFER_SIZE - 1) { 
+        } else if (ascii == '\n') { 
+            process_input_logged();
+        }  else if (ascii) { 
+            if (input_index < INPUT_BUFFER_SIZE - 1) {
                 input_buffer[input_index++] = ascii;
                 put_char(ascii); 
             }
         }
     }
 }
+
+
 
 void keyboard_handler() {
     unsigned char scancode = read_scancode();
@@ -1055,7 +1116,12 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     cursor_x = 0;
     cursor_y = 19; 
 
+
+
+//delete_inode(&sb, inodes, new_inode->inode_number);
+
     
+
     sound_init();
 
 
@@ -1071,13 +1137,23 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 
 
 
-    W_MSG();
+    LOGIN_W();
+    //delay(700);
+
+    //W_MSG();
 
     while (1) {
+
+        if(logged == 1) {
          keyboard_handler();
 
+        } else if(logged == 0)  {
+         keyboard_handler_logged();
+
+       
     }
-};
+}
+}
 
 void k_clear_screen()
 {
@@ -1175,6 +1251,7 @@ unsigned int k_printf_center(char *message, unsigned int line, unsigned int colo
 
 
 
+
 /*
 
 void W_MSG(){
@@ -1192,7 +1269,6 @@ void W_MSG(){
 
 
 }*/
-
 
 
 

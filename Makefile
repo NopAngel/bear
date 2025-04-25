@@ -30,7 +30,8 @@ compile:
 	gcc -m32 -c include/drivers/vesa/vesa.c -o vesa.o
 	gcc -m32 -c include/itoa.c -o itoa.o
 	gcc -m32 -c cpu/get_cpu_info.c -o cpu_info.o
-	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o itoa.o cpu_info.o
+	
+	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o itoa.o cpu_info.o 
 
 
 #compile:
