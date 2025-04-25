@@ -1,24 +1,33 @@
 
 
+/*
+*
+*   sharedmemory.c - shared memory (optimization)
+*
+*  (C) 2025 Angel Nieto/NopAngel <angelnieto1402@gmail.com>
+*
+*           This code is licenced under the APACHE 2.0
+*/
+
+
 void *allocate_shared_memory(unsigned int size);
 void free_shared_memory(void *address);
 void init_shared_memory();
 
-// Variables globales para memoria compartida
-#define SHARED_MEMORY_SIZE 4096   // Tamaño total de la memoria compartida
-#define MAX_SHARED_BLOCKS 8      // Número máximo de bloques de memoria compartida
+
+#define SHARED_MEMORY_SIZE 4096   
+#define MAX_SHARED_BLOCKS 8    
 
 typedef struct {
-    int is_used;               // Indica si el bloque está en uso
-    void *start_address;       // Dirección base del bloque
-    unsigned int size;         // Tamaño del bloque
+    int is_used;             
+    void *start_address;       
+    unsigned int size;         
 } shared_block_t;
 
-// Tabla de bloques y dirección base de memoria compartida
+
 shared_block_t shared_blocks[MAX_SHARED_BLOCKS];
 void *shared_memory_base = (void *)0x100000;
 
-// Función para inicializar los bloques de memoria compartida
 void init_shared_memory() {
     for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
         shared_blocks[i].is_used = 0;
@@ -27,22 +36,21 @@ void init_shared_memory() {
     }
 }
 
-// Función para asignar un bloque de memoria compartida
+
 void *allocate_shared_memory(unsigned int size) {
     for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
         if (!shared_blocks[i].is_used && shared_blocks[i].size >= size) {
-            shared_blocks[i].is_used = 1; // Marcar el bloque como usado
-            return shared_blocks[i].start_address; // Retornar la dirección base del bloque
+            shared_blocks[i].is_used = 1; 
+            return shared_blocks[i].start_address; 
         }
     }
-    return 0; // Devuelve 0 si no hay bloques disponibles
+    return 0; 
 }
 
-// Función para liberar un bloque de memoria compartida
 void free_shared_memory(void *address) {
     for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
         if (shared_blocks[i].start_address == address) {
-            shared_blocks[i].is_used = 0; // Marcar el bloque como libre
+            shared_blocks[i].is_used = 0; 
             return;
         }
     }

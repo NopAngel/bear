@@ -1,5 +1,15 @@
-#define MAX_DIRECTORIES 128 // Máximo número de directorios
-#define MAX_NAME_LENGTH 12  // Longitud máxima del nombre de la carpeta
-#define DISK_SIZE 1024 * 1024 // Tamaño del "disco" virtual (1 MB)
-#define MAX_FILES 128 // Máximo número de archivos
-#define MAX_FILENAME_LENGTH 12 // Longitud máxima del nombre del archivo
+/*
+*
+*   disk.h - disk configuration file
+*
+*  (C) 2025 Angel Nieto/NopAngel <angelnieto1402@gmail.com>
+*
+*           This code is licenced under the APACHE 2.0
+*/
+
+
+#define MAX_DIRECTORIES 128
+#define MAX_NAME_LENGTH 12 
+#define DISK_SIZE 1024 * 1024 
+#define MAX_FILES 128 
+#define MAX_FILENAME_LENGTH 12 

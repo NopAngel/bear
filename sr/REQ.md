@@ -3,15 +3,15 @@ Hello! This is a reference article about the minimum (and recommended) requireme
 
 Minimum requirement:                    It should be noted that with these requirements you will be able to go to 60 fps (because, yes, it is limited to those FPS to avoid problems):
 
- - Ram: 128 MB.
+ - Ram: 30 MB.
 
- - Storage: 20 GB
+ - Storage: 2 GB
 
  - Graphics: VGA (for 800x600)
 
 Recommended requirements:
 
- - RAM: 4 GB.
+ - RAM: 4 GB (or more)
 
  - Storage: 10 GB ( or more for additional software, updates, and file storage. )
 
