@@ -1,6 +1,6 @@
 struct inode *create_file(struct superblock *sb, struct inode *inodes, uint32_t file_size, uint32_t *data_blocks) {
     if (sb->free_inodes == 0 || sb->free_blocks < file_size / BLOCK_SIZE + (file_size % BLOCK_SIZE != 0)) {
-        return (struct inode *)0; // No hay espacio suficiente
+        return (struct inode *)0; 
     }
 
     struct inode *new_inode = (struct inode *)0;

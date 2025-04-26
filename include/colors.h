@@ -50,3 +50,6 @@
 
 
 #define WHITE_BG_BLACK 0x70
+
+
+#define GREEN_BG_BLACK 0x20

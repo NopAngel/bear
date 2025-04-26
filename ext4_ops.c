@@ -5,54 +5,53 @@ uint32_t directory_allocation_map[MAX_DIRECTORY_ENTRIES];
 
 void initialize_allocation_map() {
     for (uint32_t i = 0; i < MAX_DIRECTORY_ENTRIES; i++) {
-        directory_allocation_map[i] = 0; // Indica que está libre
+        directory_allocation_map[i] = 0; 
     }
 }
 
 struct directory *allocate_directory() {
     for (uint32_t i = 0; i < MAX_DIRECTORY_ENTRIES; i++) {
         if (directory_allocation_map[i] == 0) {
-            directory_allocation_map[i] = 1; // Marca como ocupado
+            directory_allocation_map[i] = 1; 
             return &preallocated_directories[i];
         }
     }
-    return (struct directory *)0; // No hay espacio disponible
+    return (struct directory *)0; 
 }
 
 void free_directory(struct directory *dir) {
     for (uint32_t i = 0; i < MAX_DIRECTORY_ENTRIES; i++) {
         if (&preallocated_directories[i] == dir) {
-            directory_allocation_map[i] = 0; // Marca como libre
+            directory_allocation_map[i] = 0; 
             return;
         }
     }
 }
 void mkdir(struct directory *current, char *name, uint32_t inode_number) {
     for (uint32_t i = 0; i < MAX_DIRECTORY_ENTRIES; i++) {
-        if (current->entries[i] == (struct directory *)0) { // Busca un espacio libre
+        if (current->entries[i] == (struct directory *)0) { 
             struct directory *new_dir = allocate_directory();
             if (new_dir == (struct directory *)0) {
-                return; // Sin espacio para un nuevo directorio
+                return; 
             }
 
-            // Configura el nuevo directorio
+            
             new_dir->inode_number = inode_number;
             uint32_t j = 0;
             while (name[j] != '\0' && j < MAX_PATH_LENGTH - 1) {
                 new_dir->name[j] = name[j];
                 j++;
             }
-            new_dir->name[j] = '\0'; // Termina el nombre con '\0'
+            new_dir->name[j] = '\0'; 
             new_dir->parent = current;
 
-            // Inicializa las entradas del nuevo directorio
             for (uint32_t k = 0; k < MAX_DIRECTORY_ENTRIES; k++) {
                 new_dir->entries[k] = (struct directory *)0;
             }
 
-            // Guarda el nuevo directorio en el padre
+   
             current->entries[i] = new_dir;
-            return; // Salir tras crear el directorio
+            return; 
         }
     }
 }
@@ -128,7 +127,7 @@ unsigned int vga_display(char *message, unsigned int line, unsigned int color)
 
     while (*message != 0)
     {
-        if (*message == '\n') // chequeo de nueva línea
+        if (*message == '\n') // check the new line
         {
             line++;
             i = (line * 80 * 2);

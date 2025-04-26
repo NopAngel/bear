@@ -1,5 +1,5 @@
 #include "usb_driver.h"
-#include "bear/perintk.h" // Para usar k_printf
+#include "../../../fs/k_printf.h" // Para usar k_printf
 
 // Memoria simulada para los puertos USB
 #define MAX_USB_PORTS 4

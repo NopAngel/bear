@@ -1,133 +1,122 @@
 section .data
-    vga_mode db 0x13                ; Modo gráfico 320x200 con 256 colores
-    vga_palette_port db 0x03C8      ; Puerto para la paleta de colores
-    vga_data_port db 0x03C9         ; Puerto para datos de la paleta
-    framebuffer resb 64000          ; Buffer de 320x200 píxeles (64000 bytes)
+    vga_mode db 0x13                
+    vga_palette_port db 0x03C8      ; 
+    vga_data_port db 0x03C9         ; 
+    framebuffer resb 64000          ;
 
 section .text
     global _start
 
 _start:
-    ; Establecer el modo VGA
+
     call set_vga_mode
 
-    ; Limpiar la pantalla con un color de fondo
-    mov al, 0x02          ; Color de fondo
+  
+    mov al, 0x02          ; color bg
     call clear_screen
 
-    ; Dibujar un rectángulo relleno
-    mov ax, 50            ; X inicial
-    mov bx, 50            ; Y inicial
-    mov cx, 100           ; Ancho
-    mov dx, 50            ; Alto
-    mov si, 0x1C          ; Color del rectángulo
+  
+    mov ax, 50            ; x initial
+    mov bx, 50            ; y initial
+    mov cx, 100           ; width
+    mov dx, 50            ; height
+    mov si, 0x1C          ; 
     call draw_filled_rect
 
-    ; Dibujar una línea horizontal
-    mov ax, 10            ; X inicial
-    mov bx, 150           ; Y inicial
-    mov cx, 200           ; Longitud
-    mov dx, 0x4F          ; Color
+ 
+    mov ax, 10            ; x initial
+    mov bx, 150           ; y initial
+    mov cx, 200          
+    mov dx, 0x4F          ; color
     call draw_horizontal_line
 
-    ; Dibujar una línea vertical
-    mov ax, 100           ; X inicial
-    mov bx, 20            ; Y inicial
-    mov cx, 150           ; Longitud
-    mov dx, 0x3F          ; Color
+    mov ax, 100          
+    mov bx, 20           
+    mov cx, 150         
+    mov dx, 0x3F          
     call draw_vertical_line
 
-    ; Configurar la paleta de colores
     call set_palette
 
-    ; Ciclo infinito
+    
     jmp $
 
-; -------------------------------
-; Funciones del controlador VGA
-; -------------------------------
 
-; Cambia el modo VGA a 320x200, 256 colores
 set_vga_mode:
     mov ah, 0x00
     mov al, [vga_mode]
     int 0x10
     ret
 
-; Limpia la pantalla con un color específico
+
 clear_screen:
-    mov ax, 0xA000        ; Dirección base de memoria VGA
+    mov ax, 0xA000        
     mov es, ax
-    xor di, di            ; Inicio de la memoria
-    mov cx, 64000         ; 320x200 píxeles
+    xor di, di           
+    mov cx, 64000         
     rep stosb
     ret
 
-; Dibujar un píxel en la pantalla
 draw_pixel:
-    push ax               ; Guardar registros
+    push ax               
     push bx
-    mov ax, 0xA000        ; Dirección base de memoria VGA
+    mov ax, 0xA000        
     mov es, ax
-    mov di, bx            ; Calcular posición en Y
-    mul cx                ; Multiplicar por ancho de la pantalla
-    add di, ax            ; Sumar posición en X
-    mov al, dl            ; Color del píxel
+    mov di, bx           
+    mul cx            
+    add di, ax            
+    mov al, dl            
     stosb
-    pop bx                ; Restaurar registros
+    pop bx             
     pop ax
     ret
 
-; Dibujar una línea horizontal
+
 draw_horizontal_line:
-    mov si, ax            ; Guardar X inicial
+    mov si, ax         
 draw_h_line_loop:
-    call draw_pixel       ; Dibujar píxel
+    call draw_pixel     
     inc si
     loop draw_h_line_loop
     ret
 
-; Dibujar una línea vertical
 draw_vertical_line:
-    mov si, bx            ; Guardar Y inicial
+    mov si, bx            
 draw_v_line_loop:
-    call draw_pixel       ; Dibujar píxel
+    call draw_pixel       
     inc si
     loop draw_v_line_loop
     ret
 
-; Dibujar un rectángulo relleno
 draw_filled_rect:
-    push cx               ; Guardar ancho
+    push cx               
 rect_fill_loop:
     call draw_horizontal_line
-    inc bx                ; Siguiente fila
+    inc bx
     loop rect_fill_loop
-    pop cx                ; Restaurar ancho
+    pop cx               
     ret
 
-; Configurar una paleta de colores personalizada
 set_palette:
     mov dx, [vga_palette_port]
     xor al, al
-    out dx, al            ; Iniciar escritura en la paleta
+    out dx, al            
     mov dx, [vga_data_port]
-    mov cx, 256           ; 256 colores
+    mov cx, 256           ; 256 colors!!!
 set_palette_loop:
-    mov al, cl            ; Intensidad de rojo
+    mov al, cl            ; intensity for the red
     out dx, al
-    mov al, ch            ; Intensidad de verde
+    mov al, ch            ; intensity for the green
     out dx, al
-    out dx, al            ; Intensidad de azul (igual a verde)
+    out dx, al            ; intensity for the blue 
     loop set_palette_loop
     ret
 
-; Desplazar la pantalla hacia abajo
 scroll_screen:
-    mov ax, 0xA000        ; Dirección base de memoria VGA
+    mov ax, 0xA000        ; direction base for vga
     mov es, ax
-    lea si, [es:0x01400]  ; Dirección de la segunda fila (320 bytes)
-    xor di, di            ; Comienzo de la memoria
-    mov cx, 63200         ; Copiar 316 filas (316*200 bytes)
-    rep movsb             ; Desplazar filas hacia arriba
+    lea si, [es:0x01400]  
+    xor di, di            
+    mov cx, 63200        
+    rep movsb             
     ret

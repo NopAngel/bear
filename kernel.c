@@ -32,6 +32,9 @@ void k_clear_screen();
 #include "shutdown.h"
 #include "include/itoa.h"
 #include "cpu/get_cpu_info.h"
+#include "include/memory/sharedmemory.h"
+#include "include/drivers/vesa/vesa.h"
+#include "include/drivers/mouse/mouse.h"
 
 
 
@@ -58,59 +61,17 @@ typedef unsigned long long uint64_t;
 
 
 
-void free_shared_memory(void *address);
-void init_shared_memory();
+
 void kernel_panic();
 
 
 
+
+/*
 void *allocate_shared_memory(unsigned int size);
 void free_shared_memory(void *address);
 void init_shared_memory();
-
-
-#define SHARED_MEMORY_SIZE 4096
-#define MAX_SHARED_BLOCKS 8     
-
-typedef struct {
-    int is_used;             
-    void *start_address;      
-    unsigned int size;  
-} shared_block_t;
-
-shared_block_t shared_blocks[MAX_SHARED_BLOCKS];
-void *shared_memory_base = (void *)0x100000;
-
-
-void init_shared_memory() {
-    for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
-        shared_blocks[i].is_used = 0;
-        shared_blocks[i].start_address = shared_memory_base + (i * (SHARED_MEMORY_SIZE / MAX_SHARED_BLOCKS));
-        shared_blocks[i].size = SHARED_MEMORY_SIZE / MAX_SHARED_BLOCKS;
-    }
-}
-
-
-void *allocate_shared_memory(unsigned int size) {
-    for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
-        if (!shared_blocks[i].is_used && shared_blocks[i].size >= size) {
-            shared_blocks[i].is_used = 1; 
-            return shared_blocks[i].start_address;
-        }
-    }
-    return 0; 
-}
-
-void free_shared_memory(void *address) {
-    for (int i = 0; i < MAX_SHARED_BLOCKS; i++) {
-        if (shared_blocks[i].start_address == address) {
-            shared_blocks[i].is_used = 0;
-            return;
-        }
-    }
-}
-
-
+*/
 
 
 
@@ -171,6 +132,17 @@ CANT USE:
 static inline void outb(unsigned short port, unsigned char value) {
     __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
 }
+
+static inline void outl(unsigned short port, unsigned int value) {
+    asm volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static inline unsigned int inl(unsigned short port) {
+    unsigned int value;
+    asm volatile ("inl %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
 
 void sound_init() {
     outb(SOUND_COMMAND_PORT, 0x01); 
@@ -255,14 +227,71 @@ void CR_W() {
 	k_printf("[BEAR] Commands PREPARING",8, GREEN_TXT);
     delay(50);
     k_printf("[BEAR] Commands PREPARED..",8, GREEN_TXT);
+    delay(50);
 
-	k_printf("-----------------------------------",9, WHITE_TXT);
+    k_printf("[BEAR] Drivers PREPARING..",9, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Drivers PREPARED..",10, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Disk method PREPARING",11, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Disk method PREPARED..",12, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] PCI Devices PREPARING",13, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] PCI Devices PREPARED..",14, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Colors loading",15, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Colors loaded..",16, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Optimization PREPARING",17, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Optimization PREPARED..",18, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Itoa PREPARING",19, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] Itoa PREPARED..",20, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] SOUND DRVIER PREPARED",21, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] SOUND DRIVER PREPARING..",22, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] INFORMATION PREPARING",23, GREEN_TXT);
+    delay(50);
+
+    k_printf("[BEAR] INFORMATION PREPARED..",24, GREEN_TXT);
+    delay(50);
+
+
+	k_printf("-----------------------------------",25, WHITE_TXT);
+    k_clear_screen();
 	k_printf_center("All packages and services are ready ",11, GREEN_TXT);
 	delay(500);
 	k_clear_screen();
     k_printf_center("BearOS starting - Author: NopAngel", 12, ORANGE_TXT);
     delay(300);
 }
+
+#define CONFIG_ADDRESS 0xCF8
+#define CONFIG_DATA 0xCFC
+
+
+
 
 
 void LOGIN_W() {
@@ -271,14 +300,121 @@ void LOGIN_W() {
 
     k_printf_center("BearOS logged screen", 10, ORANGE_TXT);
     k_printf_center("Username and Password", 11, WHITE_TXT);
-    k_printf_center("****************************", 13, WHITE_TXT);
+    k_printf_center("****************************", 12, WHITE_TXT);
 }
 
 void W_MSG() {
     k_clear_screen();
-    k_printf_center("+--------------------------------------------------+", 0, ORANGE_TXT); 
-    k_printf_center("Bear OS - Author: NopAngel", 1, WHITE_TXT); 
-    k_printf_center("+--------------------------------------------------+", 2, ORANGE_TXT); 
+     k_printf_center("+", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+---", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+----", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+------", 0, ORANGE_TXT); 
+    delay(30);
+
+    k_printf_center("+-------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+---------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+----------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+------------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-------------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------------", 0, ORANGE_TXT); 
+    delay(30);
+
+    k_printf_center("+---------------",0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+----------------",0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----------------",0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----------------",0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+------------------",0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-------------------",0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------------------", 0, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------------------+",0, ORANGE_TXT);
+    k_printf_center("B", 1, WHITE_TXT); 
+    delay(30);
+    k_printf_center("Be", 1, WHITE_TXT); 
+    delay(30);
+    k_printf_center("Bea", 1, WHITE_TXT); 
+    delay(30);
+    k_printf_center("Bear", 1, WHITE_TXT); 
+    delay(30);
+    k_printf_center("BearO", 1, WHITE_TXT); 
+    delay(30);
+    k_printf_center("BearOS", 1, WHITE_TXT);  
+    delay(30);
+    k_printf_center("+", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+---", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+----", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+------", 2, ORANGE_TXT); 
+    delay(30);
+
+    k_printf_center("+-------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+---------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+----------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------------", 2, ORANGE_TXT); 
+    delay(30);
+
+    k_printf_center("+---------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+----------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-----------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+------------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+-------------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------------------", 2, ORANGE_TXT); 
+    delay(30);
+    k_printf_center("+--------------------+", 2, ORANGE_TXT); 
+
+
+
+
 
 }
 
@@ -693,11 +829,12 @@ void display_stats() {
     unsigned int ram_usage = get_ram_size(); 
     unsigned int disk_usage = get_disk_usage();
 
-    k_printf("********************************", cursor_y++, GREEN_TXT);
-    k_printf("*       SYSTEM STATISTICS      *", cursor_y++, GREEN_TXT);
-    k_printf("********************************", cursor_y++, GREEN_TXT);
+    k_printf("         CPU [||                   ]", cursor_y++, GREEN_TXT);
+    k_printf("         RAM [|||                  ]", cursor_y++, GREEN_TXT);
+    k_printf("        DISK [||                   ]", cursor_y++, GREEN_TXT);
+    k_printf("MORE INFORMATION                                                                          ", cursor_y++, GREEN_BG_BLACK);
 
-    k_printf("CPU Cycles:", cursor_y++, GREEN_TXT);
+    k_printf("CPU Cycles:", cursor_y++, ORANGE_TXT);
     itoa(cpu_cycles, buffer, 10);
     k_printf(buffer, cursor_y++, AQUA_TXT);
 
@@ -705,11 +842,11 @@ void display_stats() {
     itoa(ram_usage, buffer, 10);
     k_printf(buffer, cursor_y++, AQUA_TXT);
 
-    k_printf("Disk Usage (MB):", cursor_y++, GREEN_TXT);
+    k_printf("Disk Usage (MB):", cursor_y++, BLUE_TXT);
     itoa(disk_usage, buffer, 10);
     k_printf(buffer, cursor_y++, AQUA_TXT);
 
-    k_printf("********************************", cursor_y++, GREEN_TXT);
+    k_printf_center("Writting for exit", 21, WHITE_TXT);
 }
 
 void process_input_logged() {
@@ -741,31 +878,27 @@ void process_input() {
     }
 
     
-else if (strcmp(input_buffer, "reboot") == 0) {
+else if (strcmp(input_buffer, "shutdown now") == 0) {
 
     
 
 
     k_clear_screen();
-    k_printf("Resetting the system in 5 seconds...", 1, RED_TXT);
+    k_printf("Shutting down...", 0, RED_TXT);
+    delay(500);
 
-
-    for (volatile int i = 0; i < 50000000; i++) {      }
-
-    reboot_system();    
-    } else if (strcmp(input_buffer, "shutdown") == 0) {
-        __asm__ volatile (
-        "mov $0x13, %ax\n" 
-        "int $0x10\n"       
-    );
 
    
-    k_printf("Shutting the system in 5 seconds...", 0, RED_TXT);
+    asm volatile (
+        "movl $0x5307, %eax \n"
+        "movl $0x0001, %ebx \n"
+        "movl $0x0003, %ecx \n"
+        "int $0x15"
+    );
 
-    for (volatile int i = 0; i < 50000000; i++) { }
+}
 
-    shutdown_system();
-    }
+
 
 
 
@@ -777,7 +910,20 @@ else if (strcmp(input_buffer, "reboot") == 0) {
         display_stats();
     	
     }
-  
+
+    else if (strcmp(input_buffer, "bearfetch") == 0) {
+        k_clear_screen();
+        k_printf_center("BEAR OS", 4, ORANGE_TXT);
+        k_printf_center("-------------------------", 5, BLUE_TXT);
+        k_printf_center(" Author: NopAngel", 6, RED_TXT);
+        k_printf_center(" Repository: github.com/NopAngel/bear", 7, GRAY_TXT);
+        k_printf_center(" BearSH: 1.3", 8, GREEN_TXT);
+        k_printf_center(" LICENSE: APACHE 2.0", 8, GREEN_TXT);
+        k_printf_center("--------------------------", 9, BLUE_TXT);
+
+        
+    }
+    
 
     
     else if (strcmp(input_buffer, "about") == 0) {
@@ -864,7 +1010,7 @@ else if (strcmp(input_buffer, "pwd") == 0) {
         cursor_y = 0; 
     }
 else if (strcmp(input_buffer, "sh") == 0) {
-        k_printf("BearSH v1.3", cursor_y++, GREEN_TXT);
+        k_printf("BearSH v1.4", cursor_y++, GREEN_TXT);
         }
      else {
         k_printf("Command not found.", cursor_y++, RED_TXT); 
@@ -1020,10 +1166,25 @@ void keyboard_handler_logged() {
 }
 
 
+static inline unsigned char inb(unsigned short port) {
+    unsigned char value;
+    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
 
 void keyboard_handler() {
-    unsigned char scancode = read_scancode();
+volatile int ctrl_pressed = 0;
 
+    unsigned char scancode = read_scancode();
+  unsigned char scancode1 = inb(0x60);
+  if (scancode1 == 0x1D) { // Ctrl pressed
+        ctrl_pressed = 1;
+    } else if (scancode1 == 0x9D) { // Ctrl down
+        ctrl_pressed = 0;
+    } else if (scancode1 == 0x26 && ctrl_pressed) { // ctrl + l pressed
+        k_clear_screen();
+    }
 
     if (scancode == last_scancode ) {
         return;
@@ -1142,17 +1303,24 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 
     //W_MSG();
 
-    while (1) {
 
+
+
+    while (1) {
+   
         if(logged == 1) {
          keyboard_handler();
 
         } else if(logged == 0)  {
          keyboard_handler_logged();
 
-       
     }
+
+
+
 }
+
+
 }
 
 void k_clear_screen()
@@ -1168,20 +1336,6 @@ void k_clear_screen()
 	};
 };
 
-unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigned int color) {
-    char *vidmem = (char *) 0xb8000;
-    unsigned int i = (line * 80 * 2);
-
-    while (*message != 0) {
-        vidmem[i] = *message;      
-        message++;
-        i++;
-        vidmem[i] = color;         
-        i++;
-    }
-
-    return 1; 
-}
 
 
 /*
@@ -1273,3 +1427,19 @@ void W_MSG(){
 
 
 
+
+
+unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigned int color) {
+    char *vidmem = (char *) 0xb8000;
+    unsigned int i = (line * 80 * 2);
+
+    while (*message != 0) {
+        vidmem[i] = *message;      
+        message++;
+        i++;
+        vidmem[i] = color;         
+        i++;
+    }
+
+    return 1; 
+}

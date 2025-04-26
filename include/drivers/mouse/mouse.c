@@ -1,6 +1,16 @@
 #define MOUSE_PORT 0x64
 #define MOUSE_DATA 0x60
 
+static inline unsigned char inportb(unsigned short port) {
+    unsigned char value;
+    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
+static inline void outportb(unsigned short port, unsigned char value) {
+    asm volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
+}
+
 void mouse_write(unsigned char a) {
     while ((inportb(MOUSE_PORT) & 0x02) != 0);
     outportb(MOUSE_DATA, a);
