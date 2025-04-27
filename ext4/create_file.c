@@ -23,3 +23,5 @@ struct inode *create_file(struct superblock *sb, struct inode *inodes, uint32_t 
 
     return new_inode; 
 }
+
+// NO FUNCIONA
