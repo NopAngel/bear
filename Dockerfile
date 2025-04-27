@@ -13,5 +13,5 @@ RUN apt-get update && \
 
 
 
-RUN make iso && make run-iso && cd bear # RUN
+RUN cd ./bear && make iso && make run-iso && cd bear # RUN
 
