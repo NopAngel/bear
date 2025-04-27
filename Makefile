@@ -33,7 +33,7 @@ compile:
 	gcc -m32 -c include/memory/sharedmemory.c -o sharedmemory.o
 	gcc -m32 -c include/drivers/mouse/mouse.c -o mouse.o
 	
-	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o
+	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o 
 
 
 #compile:

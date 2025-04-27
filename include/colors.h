@@ -27,7 +27,7 @@
 #define GRAY_BG 0x80
 #define AQUA_BG 0x30
 #define RED_BG 0x40
-#define BLUE_BG 0x09
+#define BLUE_BG 0x90
 #define PURPLE_BG 0x70
 #define ORANGE_BG 0x60
 #define BLACK_BG 0x00
@@ -39,6 +39,8 @@
 // RED IN WHITE
 
 #define RED_WHITE 0x47
+
+
 
 // dsadsad
 #define ORANGE_BG_BLUECRYSTAL 0x69

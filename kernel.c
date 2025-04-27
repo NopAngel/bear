@@ -42,7 +42,6 @@ void k_clear_screen();
 
 
 
-
 void set_background_color(const char *color_name);
 unsigned int k_printf(char *message, unsigned int line, unsigned int color);
 unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigned int color);
@@ -194,7 +193,7 @@ void delay(int time) {
 void CR_W() {
 	k_clear_screen();
 	k_printf("[BEAR] Bear packs loading",0, GREEN_TXT);
-    delay(50);
+    delay(10);
     k_printf("[BEAR] Bear packs loaded.",0, GREEN_TXT);
 
 	k_printf("[BEAR] Init scripts",1, GREEN_TXT);
@@ -204,84 +203,83 @@ void CR_W() {
 
 
 	k_printf("[BEAR] Terminal preparing",3, GREEN_TXT);
-    delay(50);
+    delay(10);
     k_printf("[BEAR] Terminal prepared.",3, GREEN_TXT);
 
 
 	k_printf("[BEAR] Keyboard port inited",4, GREEN_TXT);
-    delay(50);
+    delay(10);
 
 	k_printf("[BEAR] Sound inited port",5, GREEN_TXT);
 
 
 	k_printf("[BEAR] VGA Resolution PREPARED",6, GREEN_TXT);
-    delay(50);
+    delay(10);
     k_printf("[BEAR] VGA Resolution PREPARED",6, GREEN_TXT);
 
 
 	k_printf("[BEAR] Keyboard Scanned loading",7, GREEN_TXT);
-    delay(50);
+    delay(10);
     k_printf("[BEAR] Keyboard Scanned loaded.",7, GREEN_TXT);
 
 
 	k_printf("[BEAR] Commands PREPARING",8, GREEN_TXT);
-    delay(50);
+    delay(10);
     k_printf("[BEAR] Commands PREPARED..",8, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Drivers PREPARING..",9, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Drivers PREPARED..",10, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Disk method PREPARING",11, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Disk method PREPARED..",12, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] PCI Devices PREPARING",13, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] PCI Devices PREPARED..",14, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Colors loading",15, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Colors loaded..",16, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Optimization PREPARING",17, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Optimization PREPARED..",18, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Itoa PREPARING",19, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] Itoa PREPARED..",20, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] SOUND DRVIER PREPARED",21, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] SOUND DRIVER PREPARING..",22, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] INFORMATION PREPARING",23, GREEN_TXT);
-    delay(50);
+    delay(10);
 
     k_printf("[BEAR] INFORMATION PREPARED..",24, GREEN_TXT);
-    delay(50);
+    delay(10);
 
 
 	k_printf("-----------------------------------",25, WHITE_TXT);
     k_clear_screen();
-	k_printf_center("All packages and services are ready ",11, GREEN_TXT);
-	delay(500);
+	delay(200);
 	k_clear_screen();
     k_printf_center("BearOS starting - Author: NopAngel", 12, ORANGE_TXT);
     delay(300);
@@ -297,119 +295,118 @@ void CR_W() {
 void LOGIN_W() {
     k_clear_screen();
     k_printf_center("****************************", 9, WHITE_TXT);
-
-    k_printf_center("BearOS logged screen", 10, ORANGE_TXT);
-    k_printf_center("Username and Password", 11, WHITE_TXT);
+    k_printf_center("| BearOS logged screen     |", 10, WHITE_TXT);
+    k_printf_center("| Username and Password    |", 11, WHITE_TXT);
     k_printf_center("****************************", 12, WHITE_TXT);
 }
 
 void W_MSG() {
     k_clear_screen();
      k_printf_center("+", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+---", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+----", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
 
     k_printf_center("+-------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+---------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+----------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+------------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-------------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
 
     k_printf_center("+---------------",0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+----------------",0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----------------",0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----------------",0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+------------------",0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-------------------",0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------------------", 0, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------------------+",0, ORANGE_TXT);
     k_printf_center("B", 1, WHITE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("Be", 1, WHITE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("Bea", 1, WHITE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("Bear", 1, WHITE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("BearO", 1, WHITE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("BearOS", 1, WHITE_TXT);  
-    delay(30);
+    delay(5);
     k_printf_center("+", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+---", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+----", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
 
     k_printf_center("+-------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+---------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+----------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
 
     k_printf_center("+---------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+----------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-----------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+------------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+-------------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------------------", 2, ORANGE_TXT); 
-    delay(30);
+    delay(5);
     k_printf_center("+--------------------+", 2, ORANGE_TXT); 
 
 
@@ -756,7 +753,7 @@ void scroll_screen() {
 
 
 void put_char(char c) {
-    int pos = (cursor_y * SCREEN_COLUMNS + cursor_x) * 2;
+    int pos = (cursor_y * SCREEN_COLUMNS + cursor_x) * 2; 
 
     SCREEN_BUFFER[pos] = c;          
     SCREEN_BUFFER[pos + 1] = 0x07;  
@@ -828,10 +825,6 @@ void display_stats() {
     unsigned int cpu_cycles = get_cpu_cycles();
     unsigned int ram_usage = get_ram_size(); 
     unsigned int disk_usage = get_disk_usage();
-
-    k_printf("         CPU [||                   ]", cursor_y++, GREEN_TXT);
-    k_printf("         RAM [|||                  ]", cursor_y++, GREEN_TXT);
-    k_printf("        DISK [||                   ]", cursor_y++, GREEN_TXT);
     k_printf("MORE INFORMATION                                                                          ", cursor_y++, GREEN_BG_BLACK);
 
     k_printf("CPU Cycles:", cursor_y++, ORANGE_TXT);
@@ -884,18 +877,23 @@ else if (strcmp(input_buffer, "shutdown now") == 0) {
 
 
     k_clear_screen();
-    k_printf("Shutting down...", 0, RED_TXT);
+    set_background_color("blue");
+    k_printf_center("                                              ", 10,  WHITE_BG_BLACK);
+    k_printf_center("              Turning off computer.           ", 11,  WHITE_BG_BLACK);
+    k_printf_center("                                              ", 12,  WHITE_BG_BLACK);
+
+
+
     delay(500);
 
 
    
-    asm volatile (
+  asm volatile (
         "movl $0x5307, %eax \n"
         "movl $0x0001, %ebx \n"
         "movl $0x0003, %ecx \n"
         "int $0x15"
     );
-
 }
 
 
@@ -914,12 +912,12 @@ else if (strcmp(input_buffer, "shutdown now") == 0) {
     else if (strcmp(input_buffer, "bearfetch") == 0) {
         k_clear_screen();
         k_printf_center("BEAR OS", 4, ORANGE_TXT);
-        k_printf_center("-------------------------", 5, BLUE_TXT);
-        k_printf_center(" Author: NopAngel", 6, RED_TXT);
-        k_printf_center(" Repository: github.com/NopAngel/bear", 7, GRAY_TXT);
-        k_printf_center(" BearSH: 1.3", 8, GREEN_TXT);
-        k_printf_center(" LICENSE: APACHE 2.0", 8, GREEN_TXT);
-        k_printf_center("--------------------------", 9, BLUE_TXT);
+        k_printf_center("------------------------------------", 5, ORANGE_TXT);
+        k_printf_center(" Author: NopAngel", 6, WHITE_TXT);
+        k_printf_center(" Repository: github.com/NopAngel/bear", 7, WHITE_TXT);
+        k_printf_center(" BearSH: 1.3", 8, WHITE_TXT);
+        k_printf_center(" LICENSE: APACHE 2.0", 8, WHITE_TXT);
+        k_printf_center("------------------------------------", 9, ORANGE_TXT);
 
         
     }
@@ -964,26 +962,6 @@ else if (strcmp(input_buffer, "shutdown now") == 0) {
     
 
 
-
-
-    else if (strncmp(input_buffer, "print ", 6) == 0) {
-        cursor_y = cursor_y + 1;
-        const char *value = input_buffer + 6;
-        k_printf(value, cursor_y++, WHITE_TXT);
-    }   
-    else if (strncmp(input_buffer, "print-red ", 10) == 0) {
-        cursor_y = cursor_y + 1;
-        const char *value = input_buffer + 10;
-        k_printf(value, cursor_y++, RED_TXT);
-    }else if (strncmp(input_buffer, "print-green ", 13) == 0) {
-        cursor_y = cursor_y + 1;
-        const char *value = input_buffer + 13;
-        k_printf(value, cursor_y++, GREEN_TXT);
-    }else if (strncmp(input_buffer, "print-blue ", 11) == 0) {
-        cursor_y = cursor_y + 11;
-        const char *value = input_buffer + 6;
-        k_printf(value, cursor_y++, BLUE_TXT);
-    }
 
 
 
@@ -1080,7 +1058,7 @@ int caps_lock = 0;
 int shift_pressed = 0;     
 
 
-
+/*
 
 void keyboard_handler_logged() {
     unsigned char scancode = read_scancode();
@@ -1163,7 +1141,104 @@ void keyboard_handler_logged() {
             }
         }
     }
+}*/
+
+
+
+
+
+
+void keyboard_handler_logged() {
+    unsigned char scancode = read_scancode();
+
+
+    if (scancode == last_scancode ) {
+        return;
+    }
+
+    last_scancode = scancode;
+
+
+    if (scancode & 0x80 ) {
+      
+        scancode &= 0x7F;
+
+     
+        if (scancode == 0x2A || scancode == 0x36) { 
+            shift_pressed = 0;
+        }
+
+        return;
+    } else {
+       
+        if (scancode == 0x2A || scancode == 0x36) { 
+            shift_pressed = 1;
+            return;
+        } else if (scancode == 0x3A) { 
+            caps_lock = !caps_lock; 
+            return;
+        }
+    }
+
+
+    if (scancode < sizeof(scancode_to_ascii)) {
+        char ascii = scancode_to_ascii[scancode];
+
+     
+        if ((caps_lock || shift_pressed) && ascii >= 'a' && ascii <= 'z') {
+            ascii -= 32;
+        } else if (shift_pressed && ascii >= '0' && ascii <= '9') {
+         
+            switch (ascii) {
+                case '1': ascii = '!'; break;
+                case '2': ascii = '@'; break;
+                case '3': ascii = '#'; break;
+                case '4': ascii = '$'; break;
+                case '5': ascii = '%'; break;
+                case '6': ascii = '^'; break;
+                case '7': ascii = '&'; break;
+                case '8': ascii = '*'; break;
+                case '9': ascii = '('; break;
+                case '0': ascii = ')'; break;
+                case ',': ascii = ';'; break;
+                case '.': ascii = ':'; break;
+            }
+        }
+
+    
+        if (ascii == '\b') { 
+
+            if (input_index > 0) {
+                input_index--; 
+                if (cursor_x > 0) {
+                    cursor_x--;
+                } else if (cursor_y > 0) {
+                    cursor_y--;
+                    cursor_x = SCREEN_COLUMNS - 1;
+                }
+
+                int pos = (cursor_y * SCREEN_COLUMNS + cursor_x) * 2;
+                SCREEN_BUFFER[pos] = ' ';
+                SCREEN_BUFFER[pos + 1] = 0x07;
+            }
+        } else if (ascii == '\n') { 
+            process_input_logged();
+        }  else if (ascii) { 
+            if (input_index < INPUT_BUFFER_SIZE - 1) {
+                input_buffer[input_index++] = ascii;
+                put_char(ascii); 
+            }
+        }
+    }
+
 }
+
+
+
+
+
+
+
 
 
 static inline unsigned char inb(unsigned short port) {
