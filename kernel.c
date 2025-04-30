@@ -40,8 +40,6 @@ void k_clear_screen();
 
 
 
-
-
 void set_background_color(const char *color_name);
 unsigned int k_printf(char *message, unsigned int line, unsigned int color);
 unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigned int color);
@@ -669,6 +667,50 @@ void show_file_content(const char *filename) {
     k_printf("File not found", 0, RED_TXT);
 }
 
+#define CMOS_ADDRESS 0x70
+#define CMOS_DATA 0x71
+
+unsigned char read_cmos(unsigned char reg) {
+    asm volatile (
+        "mov %1, %%dx\n\t"
+        "mov %2, %%al\n\t"
+        "out %%al, %%dx\n\t"
+        "mov %3, %%dx\n\t"
+        "in %%dx, %%al\n\t"
+        : "=a" (reg)
+        : "i" (CMOS_ADDRESS), "r" (reg), "i" (CMOS_DATA)
+        : "dx"
+    );
+    return reg;
+}
+
+
+
+void get_time() {
+    unsigned char hours = read_cmos(0x04);
+    unsigned char minutes = read_cmos(0x02);
+    unsigned char seconds = read_cmos(0x00);
+    char time_str[3]; 
+    time_str[0] = (hours / 10) + '0'; 
+    time_str[1] = (hours % 10) + '0'; 
+    time_str[2] = '\0'; 
+
+    char seconds_str[3]; 
+    seconds_str[0] = (seconds / 10) + '0'; 
+    seconds_str[1] = (seconds % 10) + '0'; 
+    seconds_str[2] = '\0';
+
+    char minutes_str[3]; 
+minutes_str[0] = (minutes / 10) + '0'; 
+minutes_str[1] = (minutes % 10) + '0'; 
+minutes_str[2] = '\0';
+
+    k_clear_screen();
+    k_printf(time_str, GREEN_TXT, 0);
+    k_printf(minutes_str, GREEN_TXT, 1);
+    k_printf(seconds_str, GREEN_TXT, 2); // THIS IS A BUG :,V
+}
+
 
 void list_items() {
     int cursor_y = 0;
@@ -699,18 +741,6 @@ void list_items() {
 
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -907,17 +937,19 @@ else if (strcmp(input_buffer, "shutdown now") == 0) {
     	cursor_y = 0;
         display_stats();
     	
+    } else if(strcmp(input_buffer, "time") == 0) {
+        get_time();
     }
 
     else if (strcmp(input_buffer, "bearfetch") == 0) {
         k_clear_screen();
-        k_printf_center("BEAR OS", 4, ORANGE_TXT);
+        k_printf_center("root@bearOS", 4, ORANGE_TXT);
         k_printf_center("------------------------------------", 5, ORANGE_TXT);
-        k_printf_center(" Author: NopAngel", 6, WHITE_TXT);
-        k_printf_center(" Repository: github.com/NopAngel/bear", 7, WHITE_TXT);
-        k_printf_center(" BearSH: 1.3", 8, WHITE_TXT);
-        k_printf_center(" LICENSE: APACHE 2.0", 8, WHITE_TXT);
-        k_printf_center("------------------------------------", 9, ORANGE_TXT);
+        k_printf_center("Kernel: Bear Operating System v2.2.3", 6, WHITE_TXT);
+        k_printf_center("Swap: Disabled", 7, WHITE_TXT);
+        k_printf_center("Locale: C.UTF-8", 8, WHITE_TXT);
+        k_printf_center("Terminal: bearSH (integrated - 800x600)", 9, WHITE_TXT);
+        k_printf_center("------------------------------------", 10, ORANGE_TXT);
 
         
     }
@@ -945,7 +977,6 @@ else if (strcmp(input_buffer, "shutdown now") == 0) {
     else if (strncmp(input_buffer, "mkdir ", 6) == 0) {
         const char *dirname = input_buffer + 6;
         cursor_y = cursor_y + 1;
-
         mkdir(dirname);
     }
     else if (strncmp(input_buffer, "touch ", 6) == 0) {
