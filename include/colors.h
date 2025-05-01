@@ -35,6 +35,11 @@
 #define GREEN_BG 0x20
 #define DARKBLUE_BG 0x10
 
+// BLUE WHITE
+
+#define BLUE_WHITE_TXT 0x97
+
+
 
 // RED IN WHITE
 

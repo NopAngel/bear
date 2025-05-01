@@ -712,6 +712,337 @@ minutes_str[2] = '\0';
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+#define MAX_PROCESSES 5 
+
+
+struct ProcessInfo {
+    unsigned int pid;
+    char name[32];
+    unsigned int cpu_usage;
+    unsigned int memory_usage;
+};
+
+struct ProcessInfo process_table[MAX_PROCESSES];
+
+
+int convert_to_string(char *buffer, unsigned int value) {
+    char temp[10];
+    int i = 0, length = 0;
+
+    do {
+        temp[i++] = '0' + (value % 10);
+        value /= 10;
+    } while (value > 0);
+
+    while (i > 0) {
+        *buffer++ = temp[--i];
+        length++;
+    }
+
+    return length;
+}
+
+
+int copy_string(char *dest, const char *src) {
+    int length = 0;
+    while (*src) {
+        *dest++ = *src++;
+        length++;
+    }
+    *dest = '\0';
+    return length;
+}
+
+void sniff() {
+    int i;
+    unsigned int line = 5;
+    unsigned int color = 0x07;
+    k_clear_screen();
+    k_printf("Sniff - Command", 0, GREEN_TXT);
+
+
+    for (i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i].pid > 0) { 
+            char buffer[128];
+            char *ptr = buffer;
+
+            ptr += convert_to_string(ptr, process_table[i].pid);
+            *(ptr++) = ' ';
+            ptr += copy_string(ptr, process_table[i].name);
+            *(ptr++) = ' ';
+            ptr += convert_to_string(ptr, process_table[i].cpu_usage);
+            *(ptr++) = '%';
+            *(ptr++) = ' ';
+            ptr += convert_to_string(ptr, process_table[i].memory_usage);
+            *(ptr++) = 'K';
+            *(ptr++) = 'B';
+            *(ptr++) = '\0';
+
+            k_printf(buffer, line++, color);
+        }
+    }
+
+}
+
+
+
+
+
+
+
+void init_process_table() {
+    process_table[0].pid = 1;
+    copy_string(process_table[0].name, "KernelTask");
+    process_table[0].cpu_usage = 10;
+    process_table[0].memory_usage = 512;
+
+    process_table[1].pid = 2;
+    copy_string(process_table[1].name, "UserShell");
+    process_table[1].cpu_usage = 5;
+    process_table[1].memory_usage = 256;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void roar(char *message){
+    k_printf(message, 20, BLUE_WHITE_TXT);
+}
+
+#define MAX_TRACK_ENTRIES 40  
+
+struct TrackEvent {
+    char message[64]; 
+    unsigned int timestamp;  
+};
+
+struct TrackEvent track_log[MAX_TRACK_ENTRIES];
+
+
+void track_event(const char *msg, unsigned int timestamp) {
+    int i;
+
+    for (i = MAX_TRACK_ENTRIES - 1; i > 0; i--) {
+        copy_string(track_log[i].message, track_log[i - 1].message);
+        track_log[i].timestamp = track_log[i - 1].timestamp;
+    }
+
+
+    copy_string(track_log[0].message, msg);
+    track_log[0].timestamp = timestamp;
+}
+
+void track() {
+    unsigned int line = 5;
+    unsigned int color = 0x07;
+    int has_active_processes = 0; 
+
+    k_printf("Track", 1, GREEN_TXT);
+
+    for (int i = 0; i < MAX_TRACK_ENTRIES; i++) {
+        if (track_log[i].timestamp != 0) {
+            has_active_processes = 1;  
+            char buffer[128];
+            char *ptr = buffer;
+
+            ptr += copy_string(ptr, track_log[i].message);
+            *(ptr++) = ' ';
+            ptr += convert_to_string(ptr, track_log[i].timestamp);
+            *(ptr++) = '\0';
+
+            k_printf(buffer, line++, color);
+        }
+    }
+
+    if (!has_active_processes) {
+        k_printf("No process is being used", line++, color);
+    }
+
+}
+
+
+
+
+
+
+
+
+void hibernateLight() {
+
+    asm volatile ("pushf");  
+    asm volatile ("pushal");   
+
+    asm volatile ("hlt");      
+
+
+    asm volatile ("popal");    
+    asm volatile ("popf");    
+}
+
+void hibernate_cozy() {
+    k_clear_screen();
+    unsigned int color = 0x0E;  
+    unsigned int line = 10;
+
+   
+    k_printf("Joined mode cozy... ", line++, color);
+    k_printf("Save status the system...", line++, color);
+
+    for (int i = 0; i < 3; i++) {
+        k_printf(".", line, color);
+    }
+
+
+    asm volatile("hlt");  
+}
+
+
+
+
+
+
+
+
+
+struct FurTheme {
+    unsigned int text_color;
+    unsigned int background_color;
+    char name[16];
+};
+
+struct FurTheme themes[] = {
+    {0x07, 0x00, "Classic"},  
+    {0x0A, 0x00, "Forest"},  
+    {0x0E, 0x00, "Warm"},     
+    {0x0C, 0x00, "Wild"},     
+};
+
+// Change theme active
+void furstyle(unsigned int theme_index) {
+    k_clear_screen();
+    if (theme_index >= sizeof(themes) / sizeof(struct FurTheme)) {
+        k_printf("Theme not found", 5, 0x0C);
+        return;
+    }
+
+    unsigned int text_color = themes[theme_index].text_color;
+    unsigned int bg_color = themes[theme_index].background_color;
+
+    k_printf("Applying theme: ", 6, text_color);
+    k_printf(themes[theme_index].name, 7, text_color);
+
+}
+
+
+int compare_strings(const char *str1, const char *str2) {
+    while (*str1 && *str2) {
+        if (*str1 != *str2) {
+            return 0;
+        }
+        str1++;
+        str2++;
+    }
+    return (*str1 == *str2);  
+}
+
+
+unsigned int get_theme_index(const char *theme_name) {
+    for (unsigned int i = 0; i < sizeof(themes) / sizeof(struct FurTheme); i++) {
+        if (compare_strings(theme_name, themes[i].name)) {
+            return i; 
+        }
+    }
+    return 0; 
+}
+
+
+
+
+struct FurVision {
+    unsigned int brightness;
+    unsigned int contrast;
+    char mode[16];
+};
+
+struct FurVision vision_modes[] = {
+    {5, 5, "Normal"},   
+    {8, 7, "Bright"}, 
+    {3, 4, "Night"},  
+    {6, 6, "Gentle"}     
+};
+
+unsigned int get_vision_index(const char *mode_name) {
+    for (unsigned int i = 0; i < sizeof(vision_modes) / sizeof(struct FurVision); i++) {
+        if (compare_strings(mode_name, vision_modes[i].mode)) {
+            return i;  
+        }
+    }
+    return 0; 
+}
+
+
+
+void furvision(unsigned int mode_index) {
+    if (mode_index >= sizeof(vision_modes) / sizeof(struct FurVision)) {
+        k_printf("Mode not found", 5, 0x0C);
+        return;
+    }
+
+    unsigned int brightness = vision_modes[mode_index].brightness;
+    unsigned int contrast = vision_modes[mode_index].contrast;
+
+    k_printf("Adjusting FurVision: ", 6, 0x0E);
+    k_printf(vision_modes[mode_index].mode, 7, 0x0E);
+}
+
+void denreboot() {
+    k_printf("Reset BearOS...", 10, 0x0C);
+    k_printf("Save data...", 11, 0x0C);
+
+    for (int i = 0; i < 100000; i++) { asm volatile("nop"); }
+
+
+    asm volatile (
+        "cli;"           
+        "movb $0xFE, %al;" 
+        "outb %al, $0x64;" 
+        "hlt;"             
+    );
+}
+
+int check_memory_error(unsigned int addr);
+void repair_memory(unsigned int addr);
+
+
+
+
+
 void list_items() {
     int cursor_y = 0;
 
@@ -898,7 +1229,29 @@ void process_input() {
     if (strcmp(input_buffer, "test") == 0) {
         k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
-    }
+    } else if(strcmp(input_buffer, "track") == 0) {
+        k_clear_screen();
+            track_event("Kernel init", 1);
+    track_event("Load modules", 2);
+    track();
+    } else if (strcmp(input_buffer, "hibernate -light") == 0) {
+        hibernateLight(); // Congalate pc data
+    } else if (strcmp(input_buffer, "hibernate -cozy") == 0) {
+        hibernate_cozy(); // Save PC data
+    } else if (strncmp(input_buffer, "furstyle ", 9) == 0) {
+        cursor_y = cursor_y + 1;
+        const char *value = input_buffer + 9;
+        furstyle(get_theme_index(value));
+    }else if (strncmp(input_buffer, "furvision ", 10) == 0) {
+        cursor_y = cursor_y + 1;
+        const char *value = input_buffer + 9;
+        furvision(get_vision_index(value));
+
+    } else if (strcmp(input_buffer, "denreboot") == 0) {
+        denreboot();
+    } 
+
+   
 
     
 else if (strcmp(input_buffer, "shutdown now") == 0) {
@@ -924,6 +1277,13 @@ else if (strcmp(input_buffer, "shutdown now") == 0) {
         "movl $0x0003, %ecx \n"
         "int $0x15"
     );
+}
+
+else if (strcmp(input_buffer, "sniff") == 0) {
+
+   init_process_table();  // Inicializar procesos antes de llamar a sniff()
+    sniff();               // Ejecutar inspección de procesos en BearOS
+
 }
 
 
