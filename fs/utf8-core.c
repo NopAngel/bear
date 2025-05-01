@@ -54,7 +54,7 @@ int utf8_strncmp(const struct unicode_map *um, const struct qstr *s1, const stru
     return 1;  
 }
 
-// Normalizar cadenas UTF-8
+
 int utf8_normalize(const struct unicode_map *um, const struct qstr *str, char *dest, size_t dlen) {
     size_t index = 0, dest_index = 0;
 
@@ -63,16 +63,16 @@ int utf8_normalize(const struct unicode_map *um, const struct qstr *str, char *d
         if (code_point == -1) {
             return -1;  
         }
-        dest[dest_index++] = (char)code_point;  // Copiar el carácter normalizado
+        dest[dest_index++] = (char)code_point; 
     }
     if (dest_index < dlen) {
-        dest[dest_index] = '\0';  // Terminar la cadena
+        dest[dest_index] = '\0';
         return 0;
     }
-    return -1;  // Espacio insuficiente en el destino
+    return -1;  
 }
 
-// Decodificar un carácter UTF-8
+
 int utf8_decode(const char *str, size_t *index, size_t len) {
     unsigned char first_byte = str[*index];
     int code_point;
@@ -91,13 +91,13 @@ int utf8_decode(const char *str, size_t *index, size_t len) {
         code_point = first_byte & 0x07;
         remaining_bytes = 3;
     } else {
-        return -1;  // Byte inicial inválido
+        return -1;  
     }
 
     for (size_t i = 0; i < remaining_bytes; i++) {
         (*index)++;
         if (*index >= len || (str[*index] & 0xC0) != 0x80) {
-            return -1;  // Byte de continuación inválido
+            return -1;  
         }
         code_point = (code_point << 6) | (str[*index] & 0x3F);
     }

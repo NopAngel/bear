@@ -11,22 +11,22 @@
 #ifndef UTF8_H
 #define UTF8_H
 
-// Definición de tipos básicos
-typedef unsigned int size_t; // Tamaño como tipo entero sin signo
-typedef unsigned char uint8_t; // Byte único para operaciones
 
-// Estructura para mapear Unicode
+typedef unsigned int size_t;
+typedef unsigned char uint8_t; 
+
+
 struct unicode_map {
-    unsigned int version; // Versión de UTF-8 (ejemplo: 1 para Unicode 1.0)
+    unsigned int version;
 };
 
-// Estructura para manejar cadenas UTF-8
+
 struct qstr {
-    const char *name; // Puntero a los datos de la cadena
-    size_t len;       // Longitud de la cadena
+    const char *name; 
+    size_t len;       
 };
 
-// Funciones para trabajar con UTF-8
+
 int utf8_validate(const struct unicode_map *um, const struct qstr *str);
 int utf8_strncmp(const struct unicode_map *um, const struct qstr *s1, const struct qstr *s2);
 int utf8_normalize(const struct unicode_map *um, const struct qstr *str, char *dest, size_t dlen);
