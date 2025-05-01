@@ -27,6 +27,7 @@ volatile unsigned char last_scancode = 0;
 int logged;
 void k_clear_screen();
 #include "fs/k_printf.h"
+#include "fs/k_printf_noline.h"
 #include "reboot.h"
 #include "include/multiboot.h"
 #include "shutdown.h"
@@ -1051,7 +1052,7 @@ void list_items() {
         k_printf("Directory's:\n", cursor_y++, BLUE_TXT);
         for (unsigned int i = 0; i < directory_count; i++) {
             k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
-            k_printf_no_newline(directory_table[i].name, cursor_y++, WHITE_TXT);
+            (directory_table[i].name, cursor_y++, WHITE_TXT);
         }
     }
     cursor_y = cursor_y + 2;
@@ -1060,8 +1061,8 @@ void list_items() {
     if (file_count > 0) {
         k_printf("File's:\n", cursor_y++, GREEN_TXT);
         for (unsigned int i = 0; i < file_count; i++) {
-            k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
-            k_printf_no_newline(file_table[i].name, cursor_y++, WHITE_TXT);
+            ("  - ", cursor_y++, WHITE_TXT);
+            (file_table[i].name, cursor_y++, WHITE_TXT);
 
         }
     }
@@ -1281,8 +1282,8 @@ else if (strcmp(input_buffer, "shutdown now") == 0) {
 
 else if (strcmp(input_buffer, "sniff") == 0) {
 
-   init_process_table();  // Inicializar procesos antes de llamar a sniff()
-    sniff();               // Ejecutar inspección de procesos en BearOS
+   init_process_table();  
+    sniff();               
 
 }
 
@@ -1396,48 +1397,6 @@ else if (strcmp(input_buffer, "sh") == 0) {
 }
 
 
-/*
-void keyboard_handler() {
-    unsigned char scancode = read_scancode();
-
-    if (scancode == last_scancode) {
-        return;
-    }
-
-    last_scancode = scancode;
-
-    if (scancode < sizeof(scancode_to_ascii)) {
-        char ascii = scancode_to_ascii[scancode];
-
-        // Manejar teclas especiales
-        if (ascii == '\b') { // Backspace
-            if (input_index > 0) {
-                input_index--; // Retroceder en el buffer
-                if (cursor_x > 0) {
-                    cursor_x--;
-                } else if (cursor_y > 0) {
-                    cursor_y--;
-                    cursor_x = SCREEN_COLUMNS - 1;
-                }
-
-                int pos = (cursor_y * SCREEN_COLUMNS + cursor_x) * 2;
-                SCREEN_BUFFER[pos] = ' ';
-                SCREEN_BUFFER[pos + 1] = 0x07;
-            }
-        } else if (ascii == '\n') { // Enter
-            process_input(); // Procesar el comando ingresado
-        } else if (ascii) { // Otros caracteres
-            if (input_index < INPUT_BUFFER_SIZE - 1) { // Evitar desbordamiento
-                input_buffer[input_index++] = ascii;
-                put_char(ascii);
-            }
-        }
-    }
-}
-
-
-*/
-
 
 
 
@@ -1447,93 +1406,6 @@ void keyboard_handler() {
 
 int caps_lock = 0;         
 int shift_pressed = 0;     
-
-
-/*
-
-void keyboard_handler_logged() {
-    unsigned char scancode = read_scancode();
-
-
-    if (scancode == last_scancode ) {
-        return;
-    }
-
-    last_scancode = scancode;
-
-
-    if (scancode & 0x80 ) {
-      
-        scancode &= 0x7F;
-
-     
-        if (scancode == 0x2A || scancode == 0x36) { 
-            shift_pressed = 0;
-        }
-
-        return;
-    } else {
-       
-        if (scancode == 0x2A || scancode == 0x36) { 
-            shift_pressed = 1;
-            return;
-        } else if (scancode == 0x3A) { 
-            caps_lock = !caps_lock; 
-            return;
-        }
-    }
-
-
-    if (scancode < sizeof(scancode_to_ascii)) {
-        char ascii = scancode_to_ascii[scancode];
-
-     
-        if ((caps_lock || shift_pressed) && ascii >= 'a' && ascii <= 'z') {
-            ascii -= 32;
-        } else if (shift_pressed && ascii >= '0' && ascii <= '9') {
-         
-            switch (ascii) {
-                case '1': ascii = '!'; break;
-                case '2': ascii = '@'; break;
-                case '3': ascii = '#'; break;
-                case '4': ascii = '$'; break;
-                case '5': ascii = '%'; break;
-                case '6': ascii = '^'; break;
-                case '7': ascii = '&'; break;
-                case '8': ascii = '*'; break;
-                case '9': ascii = '('; break;
-                case '0': ascii = ')'; break;
-                case ',': ascii = ';'; break;
-                case '.': ascii = ':'; break;
-            }
-        }
-
-    
-        if (ascii == '\b') { 
-            if (input_index > 0) {
-                input_index--; 
-                if (cursor_x > 0) {
-                    cursor_x--;
-                } else if (cursor_y > 0) {
-                    cursor_y--;
-                    cursor_x = SCREEN_COLUMNS - 1;
-                }
-
-                int pos = (cursor_y * SCREEN_COLUMNS + cursor_x) * 2;
-                SCREEN_BUFFER[pos] = ' ';
-                SCREEN_BUFFER[pos + 1] = 0x07;
-            }
-        } else if (ascii == '\n') { 
-            process_input_logged();
-        }  else if (ascii) { 
-            if (input_index < INPUT_BUFFER_SIZE - 1) {
-                input_buffer[input_index++] = ascii;
-                put_char(ascii); 
-            }
-        }
-    }
-}*/
-
 
 
 
@@ -1894,18 +1766,3 @@ void W_MSG(){
 
 
 
-
-unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigned int color) {
-    char *vidmem = (char *) 0xb8000;
-    unsigned int i = (line * 80 * 2);
-
-    while (*message != 0) {
-        vidmem[i] = *message;      
-        message++;
-        i++;
-        vidmem[i] = color;         
-        i++;
-    }
-
-    return 1; 
-}
