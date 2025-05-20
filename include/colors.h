@@ -21,6 +21,15 @@
 #define GREEN_TXT 0x02
 #define DARKBLUE_TXT 0x01
 
+#define RED_TXT_BG 0x44
+#define AQUA_TXT_BG 0x33
+#define WHITE_TXT_BG 0x77
+#define BLUE_TXT_BG 0x99
+#define GREEN_TXT_BG 0x22
+#define PURPLE_TXT_BG 0x77
+#define PINK_TXT_BG 0x55
+
+
 // DEFINE BACKGROUND COLORS.
 
 #define WHITE_BG 0x70											//#define BLUECRYSTAL_TXT 0x90

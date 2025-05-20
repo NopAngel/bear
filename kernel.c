@@ -24,7 +24,7 @@ int input_index = 0;
 
 volatile unsigned char last_scancode = 0;
 
-int logged;
+int logged = 1;
 void k_clear_screen();
 #include "fs/k_printf.h"
 #include "fs/k_printf_noline.h"
@@ -36,7 +36,7 @@ void k_clear_screen();
 #include "include/memory/sharedmemory.h"
 #include "include/drivers/vesa/vesa.h"
 #include "include/drivers/mouse/mouse.h"
-
+#include "fs/k_printf_xy.h"
 
 
 
@@ -281,137 +281,30 @@ void CR_W() {
 	delay(200);
 	k_clear_screen();
     k_printf_center("BearOS starting - Author: NopAngel", 12, ORANGE_TXT);
-    delay(300);
 }
 
 #define CONFIG_ADDRESS 0xCF8
 #define CONFIG_DATA 0xCFC
 
 
-
-
-
-void LOGIN_W() {
-    k_clear_screen();
-    k_printf_center("****************************", 9, WHITE_TXT);
-    k_printf_center("| BearOS logged screen     |", 10, WHITE_TXT);
-    k_printf_center("| Username and Password    |", 11, WHITE_TXT);
-    k_printf_center("****************************", 12, WHITE_TXT);
-}
-
 void W_MSG() {
     k_clear_screen();
-     k_printf_center("+", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+---", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+----", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+------", 0, ORANGE_TXT); 
-    delay(5);
-
-    k_printf_center("+-------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+---------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+----------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+------------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-------------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------------", 0, ORANGE_TXT); 
-    delay(5);
-
-    k_printf_center("+---------------",0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+----------------",0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----------------",0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----------------",0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+------------------",0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-------------------",0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------------------", 0, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------------------+",0, ORANGE_TXT);
-    k_printf_center("B", 1, WHITE_TXT); 
-    delay(5);
-    k_printf_center("Be", 1, WHITE_TXT); 
-    delay(5);
-    k_printf_center("Bea", 1, WHITE_TXT); 
-    delay(5);
-    k_printf_center("Bear", 1, WHITE_TXT); 
-    delay(5);
-    k_printf_center("BearO", 1, WHITE_TXT); 
-    delay(5);
-    k_printf_center("BearOS", 1, WHITE_TXT);  
-    delay(5);
-    k_printf_center("+", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+---", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+----", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+------", 2, ORANGE_TXT); 
-    delay(5);
-
-    k_printf_center("+-------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+---------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+----------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------------", 2, ORANGE_TXT); 
-    delay(5);
-
-    k_printf_center("+---------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+----------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-----------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+------------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+-------------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------------------", 2, ORANGE_TXT); 
-    delay(5);
-    k_printf_center("+--------------------+", 2, ORANGE_TXT); 
-
-
-
-
-
+    k_printf("BearOS (language:", 0, WHITE_TXT);
+    k_printf_xy("EN", 18,0, BLUE_TXT);
+    k_printf_xy(")", 20, 0, WHITE_TXT);
+    k_printf("login: root (without password)", 2, WHITE_TXT);
+    k_printf("If you are new, you may find BearOS documentation helpful for more information:", 4, WHITE_TXT);
+    k_printf("   - https://bearos.vercel.app/", 5, BLUE_TXT);
+    k_printf("*) BearOS is fully configured for use (default configuration)", 7, ORANGE_TXT);
+    k_printf_xy("*", 0, 8, RED_TXT_BG);
+    k_printf_xy("*",1, 8, AQUA_TXT_BG);
+    k_printf_xy("*", 2, 8, WHITE_TXT_BG);
+    k_printf_xy("*", 3, 8, BLUE_TXT_BG);
+    k_printf_xy("*", 4, 8, GREEN_TXT_BG); 
+    k_printf_xy("*", 5, 8, PURPLE_TXT_BG);
+    k_printf_xy("*", 6, 8, PINK_TXT_BG);
+    k_printf_xy("*", 7, 8, BLUE_TXT_BG);
+    k_printf_xy("*", 8,8, RED_TXT_BG);
 }
 
 
@@ -1303,16 +1196,31 @@ else if (strcmp(input_buffer, "sniff") == 0) {
     }
 
     else if (strcmp(input_buffer, "bearfetch") == 0) {
-        k_clear_screen();
-        k_printf_center("root@bearOS", 4, ORANGE_TXT);
-        k_printf_center("------------------------------------", 5, ORANGE_TXT);
-        k_printf_center("Kernel: Bear Operating System v2.2.3", 6, WHITE_TXT);
-        k_printf_center("Swap: Disabled", 7, WHITE_TXT);
-        k_printf_center("Locale: C.UTF-8", 8, WHITE_TXT);
-        k_printf_center("Terminal: bearSH (integrated - 800x600)", 9, WHITE_TXT);
-        k_printf_center("------------------------------------", 10, ORANGE_TXT);
+                                                                                                                                                       
+                                                                                                                                               
+                                                                                      
+           k_clear_screen();
 
-        
+           k_printf(" 000                000 ", 0, ORANGE_TXT);
+           k_printf("0 1 0             0 1 0", 1, ORANGE_TXT);
+           k_printf("0  1 000000000000  1  0", 2, ORANGE_TXT);
+           k_printf(" 0                   0 ", 3, ORANGE_TXT);
+           k_printf(" 0    0        0     0 ", 4, ORANGE_TXT);
+           k_printf(" 0                   0 ",5, ORANGE_TXT);
+           k_printf(" 0         1        0 ",6, ORANGE_TXT);
+           k_printf(" 0  0000000000000  0  ",7, ORANGE_TXT);
+           k_printf("  00      ---    00   ",8, ORANGE_TXT);
+           k_printf("   00           00",9, ORANGE_TXT);
+           k_printf("    0000000000000", 10, ORANGE_TXT);
+          
+
+           k_printf_xy("root@bearos", 24, 1, WHITE_TXT);
+           k_printf_xy("------------", 24, 2, ORANGE_TXT);
+           k_printf_xy("User: root (default)", 24, 3, WHITE_TXT);
+           k_printf_xy("CPU:", 24, 4, WHITE_TXT);
+           k_printf_xy("GPU: ", 24, 5, WHITE_TXT);
+           k_printf_xy("Host:", 24, 6, WHITE_TXT);
+           k_printf_xy("Locale: en_US.UTF-8", 24, 7, WHITE_TXT);
     }
     
 
@@ -1610,7 +1518,8 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 {
 
 	CR_W();
-
+    delay(200);
+    W_MSG();
 
     cursor_x = 0;
     cursor_y = 19; 
@@ -1634,9 +1543,7 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 
     free_shared_memory(block1);
 
-
-
-    LOGIN_W();
+ 
     //delay(700);
 
     //W_MSG();
