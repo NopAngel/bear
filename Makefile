@@ -32,8 +32,9 @@ compile:
 	gcc -m32 -fno-stack-protector -c cpu/get_cpu_info.c -o cpu_info.o
 	gcc -m32 -fno-stack-protector -c include/memory/sharedmemory.c -o sharedmemory.o
 	gcc -m32 -fno-stack-protector -c include/drivers/mouse/mouse.c -o mouse.o 
+        gcc -m32 -fno-stack-protector -c fs/k_printf_no_newline.c -o krpp.o # K-PRINTF-NO-NEWLINE <-- fnc.
     
-	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o
+	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o
 
 iso: compile
 	mkdir -p iso/boot/grub
