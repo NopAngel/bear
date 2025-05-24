@@ -35,7 +35,6 @@ compile:
 	gcc -m32 -fno-stack-protector -c fs/k_printf_no_newline.c -o krpp.o # K-PRINTF-NO-NEWLINE <-- fnc.
 	gcc -m32 -fno-stack-protector -c fs/k_printf_xy.c -o krpzq.o
 	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o
-
 iso: compile
 	mkdir -p iso/boot/grub
 	cp $(KERNEL_BIN) iso/boot/

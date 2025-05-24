@@ -14,6 +14,25 @@
 //this OS can be improved 1,000%, but I don't really care that much. The code is going to stay like this for a while, 
 // because it does its job, it'll be fast, it'll work well, and nothing else. I just wanted to put this out there.
 
+#define CYAN_TXT 3  // Asegurar que existe la constante
+
+
+
+
+
+unsigned int get_system_time() { // SIMULATION
+    
+    static unsigned int time_counter = 0;
+    return time_counter++;  
+}
+
+
+
+
+
+
+
+
 
 #define MAX_NAME_LENGTH 256
 #define MAX_CONTENT_LENGTH 1024
@@ -110,18 +129,6 @@ CANT USE:
 
 
 
-
-
-// DRIVERS
-
-
-
-
-
-
-
-
-// sound driver
 
 #define SOUND_COMMAND_PORT 0x388 
 #define SOUND_DATA_PORT 0x389    
@@ -377,12 +384,18 @@ char *strcpy(char *dest, const char *src) {
 
 
 
+#define MAX_FILES 100
+
 typedef struct {
     char name[MAX_NAME_LENGTH];    
     unsigned int start_block;     
     unsigned int size;             
     char content[MAX_CONTENT_LENGTH];
 } FileEntry;
+
+FileEntry file_table[MAX_FILES];  
+unsigned int file_count = 0;
+
 
 
 #define TRUE 1
@@ -399,11 +412,191 @@ unsigned int custom_strlen(const char *str) {
 
 
 
-FileEntry file_table[MAX_FILES];
+static inline unsigned char inb(unsigned short port) {
+    unsigned char value;
+    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
+
+void clear_memory(char *buffer, unsigned int length) {
+    for (unsigned int i = 0; i < length; i++) {
+        buffer[i] = 0;  // **Inicializar manualmente**
+    }
+}
+
+
+
+//LOGS
+
+
+#define MAX_LOG_ENTRIES 50  // 🔥 Número máximo de logs en memoria
+
+typedef enum { INFO, WARNING, ERROR } LogLevel;  // 🔥 Niveles de prioridad
+
+typedef struct {
+    char message[128];  
+    unsigned int timestamp;  
+    LogLevel level;  // **Nuevo campo de prioridad**
+} LogEntry;
+
+
+
+
+LogEntry log_buffer[MAX_LOG_ENTRIES];
+unsigned int log_index = 0;  // Posición actual en el buffer
+
+
+
+void add_log(const char *message, unsigned int timestamp, LogLevel level) {
+    log_buffer[log_index].timestamp = timestamp;
+    log_buffer[log_index].level = level;
+    custom_strcpy(log_buffer[log_index].message, message);
+
+    log_index = (log_index + 1) % MAX_LOG_ENTRIES;  // 🔄 Circular
+}
+
+
+
+
+
+void show_logs(LogLevel filter_level) {
+    k_printf("=== SYSTEM LOGS ===\n", 0, CYAN_TXT);
+    
+    for (unsigned int i = 0; i < MAX_LOG_ENTRIES; i++) {
+        if (log_buffer[i].message[0] != '\0' && log_buffer[i].level >= filter_level) {  
+            
+            // 📌 Mostrar tipo de log con colores
+            const char *level_text = (log_buffer[i].level == INFO) ? "[INFO] " :
+                                     (log_buffer[i].level == WARNING) ? "[WARNING] " : "[ERROR] ";
+            int color = (log_buffer[i].level == INFO) ? GREEN_TXT :
+                        (log_buffer[i].level == WARNING) ? ORANGE_TXT : RED_TXT;
+
+            k_printf(level_text, 0, color);
+            k_printf(log_buffer[i].message, 0, WHITE_TXT);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+// TEXT EDITOR
+
+int keyboard_has_input() {
+    return inb(0x64) & 1;  // Verifica si hay datos en el buffer del teclado
+}
+
+
+char read_kboard() {
+    while (!(inb(0x64) & 1));  // Esperar a que haya datos disponibles
+    return inb(0x60);          // Leer carácter del teclado
+}
+
+
+
+char get_char() {
+    char c;
+    
+    while (1) {
+        if (keyboard_has_input()) {  // Validar si hay entrada disponible
+            c = read_kboard();     // Función para leer el carácter
+            return c;
+        }
+    }
+}
+
+
+void edit_file(const char *filename, const char *new_content) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (strcmp(file_table[i].name, filename) == 0) {
+            
+            // 🔥 **Limpiar memoria sin usar `memset()`**
+            clear_memory(file_table[i].content, MAX_CONTENT_LENGTH);
+
+            custom_strcpy(file_table[i].content, new_content);
+            file_table[i].size = custom_strlen(new_content);
+            file_table[i].content[file_table[i].size] = '\0';  // 🔥 Agregar terminador seguro
+            
+            return;
+        }
+    }
+
+    k_printf("Error: File not found.\n", 0, RED_TXT);
+}
+
+
+
+
+void edit_file_interactive(const char *filename) {
+    char new_content[MAX_CONTENT_LENGTH];
+
+    k_printf("Enter new content (Press '+' to save & exit): ", 0, CYAN_TXT);
+    
+    int index = 0;
+    while (index < MAX_CONTENT_LENGTH - 1) {
+        char c = get_char();  // Leer entrada del usuario
+
+        // 📌 Detectar Escape (ASCII 27) y salir automáticamente
+        if (c == 27) {
+            k_printf("\nSaving file...\n", 0, GREEN_TXT);
+            break;
+        }
+
+        new_content[index++] = c;
+    }
+
+    new_content[index] = '\0';  // Cerrar cadena correctamente
+    edit_file(filename, new_content);  // Guardar contenido
+
+    k_printf("Exiting editor...\n", 0, WHITE_TXT);
+    return;  // Finalizar función
+}
+void view_file(const char *filename) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (strcmp(file_table[i].name, filename) == 0) {
+            if (file_table[i].size == 0) {
+                k_printf("File is empty.\n", 0, RED_TXT);
+                return;
+            }
+
+            k_printf("File content:\n", 0, CYAN_TXT);
+
+            for (unsigned int j = 0; j < file_table[i].size; j++) {
+                char c = file_table[i].content[j];
+
+                // 📌 **Evitar caracteres raros**
+                if (c >= 32 && c <= 126) {  
+                    k_printf_no_newline(&c, 0, WHITE_TXT);
+                } else {
+                    k_printf_no_newline(".", 0, RED_TXT);  // 🔥 Reemplazar caracteres inválidos
+                }
+            }
+
+            k_printf_no_newline("\n", 0, WHITE_TXT);
+            return;
+        }
+    }
+
+    k_printf("Error: File not found.\n", 0, RED_TXT);
+}
+
+
+
+
+
+
+
+
+FileEntry file_table[MAX_FILES];  
+
 
 #define MAX_CONTENT_LENGTH 1024
 
-unsigned int file_count = 0; 
 
 
 char content[MAX_CONTENT_LENGTH];
@@ -432,12 +625,29 @@ void create_new_file(const char *filename, const char *content) {
     file_count++;
 }
 
+void remove_file(const char *filename) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (custom_strcmp(file_table[i].name, filename) == 0) {
+            for (unsigned int j = i; j < file_count - 1; j++) {
+                file_table[j] = file_table[j + 1];  
+            }
+            file_count--; 
+            return;
+        }
+    }
+}
+
+
 
 int touch(const char *filename, const char *content) {
     create_new_file(filename, content);
     return 0;
 }
 
+int rmfile(const char *filename) {
+	remove_file(filename);
+	return 0;
+}
 
 
 void update_file_content(const char *filename, const char *new_content) {
@@ -548,6 +758,82 @@ int mkdir(const char *dirname) {
 
     return 0;
 }
+
+int rmdir(const char *dirname) {
+    if (directory_count == 0) {
+        k_printf("Error: No directories exist.\n", 0, RED_TXT);
+        return -1;
+    }
+
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (strcmp(directory_table[i].name, dirname) == 0) {
+         
+            for (unsigned int j = i; j < directory_count - 1; j++) {
+                directory_table[j] = directory_table[j + 1];
+            }
+            
+            directory_count--; 
+            
+            k_printf("Directory removed: ", 0, GREEN_TXT);
+            k_printf_no_newline(dirname, 0, WHITE_TXT);
+            k_printf_no_newline("\n", 0, WHITE_TXT);
+
+            return 0;
+        }
+    }
+
+    k_printf("Error: Directory not found.\n", 0, RED_TXT);
+    return -1;
+}
+
+// CD
+
+unsigned int current_directory = 0;  // default root
+
+
+int cd_back() {
+    if (current_directory == 0) {
+        k_printf("Error: Already at root.\n", 0, RED_TXT);
+        return -1;
+    }
+
+    current_directory--;  // Retrocede un nivel en la jerarquía
+
+    k_printf("Moved back to: ", 0, GREEN_TXT);
+    k_printf_no_newline(directory_table[current_directory].name, 0, WHITE_TXT);
+    k_printf_no_newline("\n", 0, WHITE_TXT);
+
+    return 0;
+}
+
+int cd(const char *dirname) {
+    
+    
+    if(dirname == "..") {
+    	cd_back();
+    } else {
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (strcmp(directory_table[i].name, dirname) == 0) {
+            current_directory = i;  // Cambia al nuevo directorio
+            k_printf("Directory changed to: ", 0, GREEN_TXT);
+            k_printf(dirname, 0, WHITE_TXT);
+            return 0;
+        }
+    }
+
+    k_printf("Error: Directory not found.\n", 0, RED_TXT);
+    return -1;
+    }
+}
+
+
+
+
+
+
+
+
+
 
 void show_file_content(const char *filename) {
     for (unsigned int i = 0; i < file_count; i++) {
@@ -937,6 +1223,68 @@ void repair_memory(unsigned int addr);
 
 
 
+#define MAX_HISTORY 1000
+char command_history[MAX_HISTORY][128];  
+unsigned int history_index = 1;
+
+
+
+
+
+
+
+
+
+// MATH
+
+int evaluate_expression(const char *expr) {
+    int result = 0;
+    char op = '+';
+    int num = 0;
+
+    while (*expr) {
+        if (*expr >= '0' && *expr <= '9') {
+            num = num * 10 + (*expr - '0');
+        } else {
+            if (op == '+') result += num;
+            if (op == '-') result -= num;
+            num = 0;
+            op = *expr;
+        }
+        expr++;
+    }
+
+    return result + (op == '+' ? num : -num);
+}
+
+
+
+
+
+
+void save_command(const char *cmd) {
+    custom_strcpy(command_history[history_index], cmd);
+    history_index += (history_index += 1) % MAX_HISTORY;
+}
+
+void show_command_history() {
+    for (unsigned int i = 0; i < MAX_HISTORY; i++) {
+        if (command_history[i][0] != '\0') {  // Evitar entradas vacías
+            k_clear_screen();
+            k_printf("Commands saved:", 0, GREEN_TXT);
+            k_printf(command_history[i], 3, WHITE_TXT);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
 void list_items() {
     int cursor_y = 0;
 
@@ -945,7 +1293,7 @@ void list_items() {
         k_printf("Directory's:\n", cursor_y++, BLUE_TXT);
         for (unsigned int i = 0; i < directory_count; i++) {
             k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
-            (directory_table[i].name, cursor_y++, WHITE_TXT);
+            k_printf(directory_table[i].name, cursor_y++, WHITE_TXT);
         }
     }
     cursor_y = cursor_y + 2;
@@ -954,8 +1302,8 @@ void list_items() {
     if (file_count > 0) {
         k_printf("File's:\n", cursor_y++, GREEN_TXT);
         for (unsigned int i = 0; i < file_count; i++) {
-            ("  - ", cursor_y++, WHITE_TXT);
-            (file_table[i].name, cursor_y++, WHITE_TXT);
+            k_printf("  - ", cursor_y++, WHITE_TXT);
+            k_printf(file_table[i].name, cursor_y++, WHITE_TXT);
 
         }
     }
@@ -1123,7 +1471,12 @@ void process_input() {
     if (strcmp(input_buffer, "test") == 0) {
         k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
-    } else if(strcmp(input_buffer, "track") == 0) {
+    } 
+    else if(strncmp(input_buffer, "     ", 5) == 0) {
+    const char *value = input_buffer + 5;
+    evaluate_expression(value);
+    }
+    else if(strcmp(input_buffer, "track") == 0) {
         k_clear_screen();
             track_event("Kernel init", 1);
     track_event("Load modules", 2);
@@ -1143,7 +1496,25 @@ void process_input() {
 
     } else if (strcmp(input_buffer, "denreboot") == 0) {
         denreboot();
-    } 
+    } else if (strncmp(input_buffer, "view ", 5) == 0) {
+        cursor_y = cursor_y + 1;
+     	const char *filename = input_buffer + 5;
+    	view_file(filename);
+    }
+    else if (strncmp(input_buffer, "svcmd ", 6) == 0) {
+        cursor_y = cursor_y + 1;
+     	const char *cmd = input_buffer + 6;
+    	save_command(cmd);
+    }
+    else if (strcmp(input_buffer, "history") == 0)  {
+    	k_clear_screen();
+    	show_command_history();
+    }
+     else if (strncmp(input_buffer, "edit ", 5) == 0) {
+        cursor_y = cursor_y + 1;
+     	const char *filename = input_buffer + 5;
+    	edit_file_interactive(filename);
+    }
 
    
 
@@ -1217,10 +1588,7 @@ else if (strcmp(input_buffer, "sniff") == 0) {
            k_printf_xy("root@bearos", 24, 1, WHITE_TXT);
            k_printf_xy("------------", 24, 2, ORANGE_TXT);
            k_printf_xy("User: root (default)", 24, 3, WHITE_TXT);
-           k_printf_xy("CPU:", 24, 4, WHITE_TXT);
-           k_printf_xy("GPU: ", 24, 5, WHITE_TXT);
-           k_printf_xy("Host:", 24, 6, WHITE_TXT);
-           k_printf_xy("Locale: en_US.UTF-8", 24, 7, WHITE_TXT);
+           k_printf_xy("Locale: en_US.UTF-8", 24, 4, WHITE_TXT);
     }
     
 
@@ -1250,10 +1618,30 @@ else if (strcmp(input_buffer, "sniff") == 0) {
     }
     else if (strncmp(input_buffer, "touch ", 6) == 0) {
         const char *filename = input_buffer + 6;
-        cursor_y = 20;
-
+  
+	k_printf("Created new file!", cursor_y++, WHITE_TXT);
         touch(filename, "");
     }
+    
+    else if (strncmp(input_buffer, "rmfile ", 7) == 0) {
+        const char *filename = input_buffer + 7;
+  
+
+        rmfile(filename);
+    }
+    else if (strncmp(input_buffer, "rmdir ", 6) == 0) {
+        const char *filename = input_buffer + 6;
+ 
+
+        rmdir(filename);
+    }
+    
+    else if (strncmp(input_buffer, "cd ", 3) == 0) {
+        const char *dirname = input_buffer + 3;
+	cd(dirname);
+    }
+    
+   
     else if (strcmp(input_buffer, "ls") == 0) {
         k_clear_screen();
         cursor_y = 20;
@@ -1277,7 +1665,13 @@ else if (strcmp(input_buffer, "repo") == 0) {
     }
 
 else if (strcmp(input_buffer, "pwd") == 0) {
-        k_printf("*/home/", cursor_y++, GREEN_TXT);
+
+    for (unsigned int i = 0; i <= current_directory; i++) {
+        k_printf(directory_table[i].name, cursor_y++, GREEN_TXT);
+        
+    }
+
+    k_printf_no_newline("\n", 0, WHITE_TXT);
     } 
 
     
@@ -1412,11 +1806,7 @@ void keyboard_handler_logged() {
 
 
 
-static inline unsigned char inb(unsigned short port) {
-    unsigned char value;
-    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
-    return value;
-}
+
 
 
 void keyboard_handler() {
@@ -1512,6 +1902,7 @@ volatile int ctrl_pressed = 0;
 
 
 
+//add_log("Kernel initialized successfully.", get_system_time(), INFO);
 
 
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
