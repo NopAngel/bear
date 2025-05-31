@@ -1549,90 +1549,6 @@ void process_input_logged() {
 
 }
 
-void draw_window(char* title, int length) {
-    k_clear_screen();
-    
-
-    
-    k_printf_xy(title, 0, 1, 0x30);
-    k_printf_xy("                                                                     ", 9, 1, 0x30);
-    k_printf_xy("x", 78, 1, 0x40);
-k_printf_xy(title, 0,24, WHITE_BG);
-k_printf_xy("                                                                  2025", 9, 24, WHITE_BG);
-   
-
-}
-
-
-
-
-
-
-
-void draw_taskbar() {
-    // Taskbar en la primera línea (línea 0), color azul clásico de Windows XP
-    k_printf_xy("  root  ",0, 0, 0x087); 
-    
-    
-    k_printf_xy(" [Help]    [Credits]    [View]                                          ", 8, 0, WHITE_BG);  // Azul más claro
-
-
-
-
-    
-
-
-
-}
-
-
-
-
-void desktop() {
-       k_printf_xy("=======", 12, 8, 0x88);
-      
-       k_printf_xy("       ", 12, 9, 0x00);
-       k_printf_xy(">_     ", 12, 10, 0x02);
-       k_printf_xy("       ", 12, 11, 0x00);
-
-       k_printf_xy("Terminal [F1]", 7, 13, 0x30);
-
-      k_printf_xy("===", 21, 8, 0xEE);
-      k_printf_xy("=======", 21,9, 0xEE);
-      k_printf_xy("=======", 21,10, 0xEE);
-      k_printf_xy("=======", 21,11,0xEE);
-
-      k_printf_xy("  Explorer [F2]", 20, 13, 0x30);
-
-      k_printf_xy(" =====", 32, 8, 0x77);
-      k_printf_xy(" =====", 32, 9, 0x77);
-      k_printf_xy(" =====", 32, 10, 0x77);
-      k_printf_xy("========", 31, 11, 0x77);
-
-      k_printf_xy("PC [F3]", 36, 13, 0x30);
-
-  k_printf_xy(">>", 34, 9, 0x11);
-  k_printf_xy(">>", 34, 10, 0x11);
-      
-
-      k_printf_xy("=======", 12, 15, 0x00);
-      k_printf_xy("=======", 12, 16, 0x00);
-      k_printf_xy("=======", 12, 17, 0x00);
-      k_printf_xy("=======", 12, 18, 0x00);
-
-      k_printf_xy("**", 12, 16, 0x22);
-      k_printf_xy("**", 14, 17, 0x22);
-      k_printf_xy("***", 16, 18, 0x22);
-      k_printf_xy("Task [F4]", 12,20, 0x30);
-      
-      k_printf_xy("Desktop [F11]", 20, 16, 0x30);
-
- 
-}
-
-int writting = 0;
-
-
 
 void process_input() {
     input_buffer[input_index] = '\0'; 
@@ -1816,14 +1732,6 @@ else if (strcmp(input_buffer, "sniff") == 0) {
         k_clear_screen();
         cursor_y = 20;
         list_items();
-    } else if (strcmp(input_buffer, "exit") == 0) {
-        writting = 0;
-        k_clear_screen();
-       
-        set_background_color("aqua"); 
-
-	desktop();
-
     }
     
 
@@ -2085,174 +1993,31 @@ volatile int ctrl_pressed = 0;
 
 
 
-
-
-struct Mouse {
-    int x, y;
-};
-
-struct Mouse mouse = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };  // Cursor en el centro
-
-void update_mouse(int dx, int dy) {
-    mouse.x += dx;
-    mouse.y += dy;
-
-    // Evitar que el cursor salga de la pantalla
-    if (mouse.x < 0) mouse.x = 0;
-    if (mouse.y < 0) mouse.y = 0;
-    if (mouse.x >= SCREEN_WIDTH) mouse.x = SCREEN_WIDTH - 1;
-    if (mouse.y >= SCREEN_HEIGHT) mouse.y = SCREEN_HEIGHT - 1;
-}
-
-
-#define PS2_DATA_PORT 0x60
-
-// Leer movimiento en X
-
-
-
-int get_mouse_dx() {
-    uint8_t dx;
-    asm volatile (
-        "inb %1, %0" : "=a"(dx) : "Nd"(PS2_DATA_PORT)
-    );
-    return dx;
-}
-
-int get_mouse_dy() {
-    uint8_t dy;
-    asm volatile (
-        "inb %1, %0" : "=a"(dy) : "Nd"(PS2_DATA_PORT)
-    );
-    return dy;
-}
-
-void draw_cursor() {
-    k_printf(" ", mouse.y, 0x07);  // Borrar cursor anterior
-    k_printf("☐", mouse.y, 0x0F);  // Dibujar cursor nuevo en blanco
-}
-
-
-
-
-int screenDesktop = 1;
-
-#define PS2_KEYBOARD_PORT 0x60
-
-unsigned char get_key_press() {
-    unsigned char keycode;
-    asm volatile (
-        "inb %1, %0" : "=a"(keycode) : "Nd"(PS2_KEYBOARD_PORT)
-    );
-    return keycode;
-}
-
-void explorer() {
-	
-	draw_window("Explorer ", 1);
-	set_background_color("white");
-	k_printf_xy("Desktop ", 0, 4, WHITE_BG);
-	k_printf_xy("Disk ", 0, 5, WHITE_BG);
-	// HEADER
-	k_printf_xy("                                       /root/main/", 0, 3, WHITE_BG);
-	
-   if (directory_count > 0) {
-        k_printf_xy("Directory's:\n", 10, 4, WHITE_BG);
-        for (unsigned int i = 0; i < directory_count; i++) {
-            k_printf_xy("  - ", 10, 5, WHITE_BG);
-            k_printf_xy(directory_table[i].name, 10, 6, WHITE_BG);
-        }
-    }
+void draw_taskbar() {
+    // Taskbar en la primera línea (línea 0), color azul clásico de Windows XP
+    k_printf_xy("Inicio", 0, 0, 0x10); 
     
-    if (file_count > 0) {
-        k_printf_xy("File's:\n", 10, 18, WHITE_BG);
-        for (unsigned int i = 0; i < file_count; i++) {
-            k_printf_xy("  - ",10, 19, WHITE_BG);
-            k_printf_xy(file_table[i].name, 10, 20, WHITE_BG);
-
-        }
-    }
     
-    if (file_count <= 0 && directory_count <= 0) {
-    	k_printf_xy("No files or folders found.", 15, 15, WHITE_BG);
-    }
-    
-	
+    k_printf_xy("[App 1]  [App 2]                                            ", 8, 0, WHITE_BG);  // Azul más claro
 }
 
 
 
-void pc_about() {
-draw_window("PC ABOUT ", 1);
-set_background_color("white");
-k_printf_center("ABOUT", 14, WHITE_BG);
-k_printf_center("OS: BearOS", 15, WHITE_BG);
-k_printf_center("UI: Basic Pack", 16, WHITE_BG);
-k_printf_center("Author: NopAngel / Angel Nieto", 17, WHITE_BG);
-k_printf_center("Repository: github.com/NopAngel/bear", 18, WHITE_BG);
-k_printf_center("LICENSE: APACHE 2.0", 19, WHITE_BG);
-}
-
-void task_manager() {
-	draw_window("Task ", 1);
-	set_background_color("white");
-	
-	
-    char buffer[32];
-    unsigned int cpu_cycles = get_cpu_cycles();
-    unsigned int ram_usage = get_ram_size(); 
-    unsigned int disk_usage = get_disk_usage();
-    
-    k_printf_xy("Information:", 0, 4, GREEN_BG);
-    
-    cursor_y = 5;
-    
-    k_printf("CPU Cycles:", cursor_y++, ORANGE_BG);
-    itoa(cpu_cycles, buffer, 10);
-    k_printf(buffer, cursor_y++, GREEN_BG);
-
-    k_printf("RAM Usage (MB):", cursor_y++, ORANGE_BG);
-    itoa(ram_usage, buffer, 10);
-    k_printf(buffer, cursor_y++, GREEN_BG);
-
-    k_printf("Disk Usage (MB):", cursor_y++, ORANGE_BG);
-    itoa(disk_usage, buffer, 10);
-    k_printf(buffer, cursor_y++, GREEN_BG);
-}
 
 
-void check_f1_pressed() {
-    unsigned char key = get_key_press();
-    
-    if (key == 0x3B) {
-        draw_window("Terminal ", 1); 
-         writting = 1;
-    } else if (key == 0x3C) {
-    	explorer();
-    	writting = 0;
-    } else if (key == 0x3D) {
-    	pc_about();
-    	writting = 0;
-    } else if (key == 0x3E) {
-    	task_manager();
-    	writting = 0;
-    } else if (key == 0x57) {
-      k_clear_screen();
-  set_background_color("aqua"); 
-
-  desktop();
-  writting = 0;
-
-    }
-}
 
 
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
 {
-  k_clear_screen();
-  set_background_color("aqua"); 
 
-  desktop();
+  init_graphics();  
+  draw_taskbar();
+   
+    for (int y = 300; y < 400; y++) {
+        for (int x = 400; x < 600; x++) {
+            draw_pixel(x, y, 0xFF0000);  // Rojo
+        }
+    }
 
     //CR_W();
     //delay(200);
@@ -2288,22 +2053,13 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 
 
 
-    while (1) 
-    {
-    	if (writting == 1){
-            keyboard_handler();
-        }
-    
-        
-        draw_taskbar();
-        
-        check_f1_pressed();
-           
+    while (1) {
+   
         if(logged == 1) {
-//         keyboard_handler();
+         keyboard_handler();
 
         } else if(logged == 0)  {
-//         keyboard_handler_logged();
+         keyboard_handler_logged();
 
     }
 
