@@ -1,8 +1,0 @@
-BearOS kernel
-===============
-
-BearOS, an ``x86-64-bit`` kernel.
-Please read the ``sr/REQ.md``, it shows the minimum and maximum requirements for the kernel.
-If you want to contribute, you can read the ``LICENSE.md`` file, where the license topic is located.
-
-This kernel will be constantly updated, but when the version is "complete" a GitHub ISSUE will be released where the . iso will be available for download (actually, it weighs nothing, much less at 16/18 MB, well, most of it)

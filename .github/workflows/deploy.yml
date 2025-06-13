@@ -1,0 +1,33 @@
+name: CI/CD for BearOS
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential qemu-system-x86 nasm gcc
+
+      - name: Build BearOS
+        run: |
+          make iso
+
+      - name: Run QEMU test
+        run: |
+          qemu-system-x86_64 -cdrom BearOS.iso -nographic -monitor none
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BearOS Build
+          path: BearOS.iso
