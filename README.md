@@ -1,9 +1,12 @@
 <center>
+
+
 <img src="./images/banner.png" />
 
 ## Bear OS.
 
 BearOS, a beautiful, comfortable, and minimalist kernel. Made for programmers.
+
 </center>
 
 ## About
