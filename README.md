@@ -1,11 +1,11 @@
 <center>
 
 
-<img src="./images/banner.png" />
+<img src="./images/banner.png" style="text-align:center;" />
 
-## Bear OS.
+<h1 style="text-align:center;">Bear OS.</h1>
 
-BearOS, a beautiful, comfortable, and minimalist kernel. Made for programmers.
+<p style="text-align:center;">BearOS, a beautiful, comfortable, and minimalist kernel. Made for programmers.</p>
 
 </center>
 
