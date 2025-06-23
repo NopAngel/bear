@@ -752,7 +752,7 @@ int mkdir(const char *dirname) {
     directory_table[directory_count].size = 1; 
     directory_count++; 
 
-    k_printf("Directory's created: ", 0, GREEN_TXT);
+    k_printf("Directory's created: ", cursor_y++, GREEN_TXT);
     k_printf_no_newline(dirname, 0, WHITE_TXT);
     k_printf_no_newline("\n", 0, WHITE_TXT);
 
@@ -1284,6 +1284,34 @@ void show_command_history() {
 
 
 
+void lsk_itm() {
+    int cursor_y = 3;
+    k_clear_screen();
+
+    k_printf("------------------------------------------", 0, ORANGE_TXT);
+    k_printf("name:                                 ", 1, ORANGE_TXT);
+    k_printf("------------------------------------------", 2, ORANGE_TXT);
+    if (directory_count > 0 | file_count > 0) {
+        for (unsigned int i = 0; i < directory_count; i++) {
+            k_printf_xy("./", 0, cursor_y, BLUE_TXT);
+            k_printf_xy("[DIR]", 19, cursor_y, GRAY_TXT);
+            k_printf_xy(directory_table[i].name, 2, cursor_y++, BLUE_TXT);
+
+        }
+
+        for (unsigned int i = 0; i < file_count; i++) {
+           k_printf_xy("[FILES]", 19, cursor_y, GRAY_TXT);
+
+           k_printf_xy(file_table[i].name, 2, cursor_y++, ORANGE_TXT);
+
+        }
+    } else {
+
+
+    }
+
+}
+
 
 void list_items() {
     int cursor_y = 0;
@@ -1476,6 +1504,12 @@ void process_input() {
     const char *value = input_buffer + 5;
     evaluate_expression(value);
     }
+
+    else if(strcmp(input_buffer, "lsk") == 0) {
+        lsk_itm();
+    }
+
+
     else if(strcmp(input_buffer, "track") == 0) {
         k_clear_screen();
             track_event("Kernel init", 1);
@@ -1619,7 +1653,7 @@ else if (strcmp(input_buffer, "sniff") == 0) {
     else if (strncmp(input_buffer, "touch ", 6) == 0) {
         const char *filename = input_buffer + 6;
   
-	k_printf("Created new file!", cursor_y++, WHITE_TXT);
+	k_printf("Created new file!", cursor_y++, GREEN_TXT);
         touch(filename, "");
     }
     
@@ -1681,9 +1715,6 @@ else if (strcmp(input_buffer, "pwd") == 0) {
         k_clear_screen();
         cursor_y = 0; 
     }
-else if (strcmp(input_buffer, "sh") == 0) {
-        k_printf("BearSH v1.4", cursor_y++, GREEN_TXT);
-        }
      else {
         k_printf("Command not found.", cursor_y++, RED_TXT); 
     }
