@@ -17,6 +17,29 @@
 #define CYAN_TXT 3  // Asegurar que existe la constante
 
 
+// --- FS MOCK --- funciones implementadas en kernel.c directamente
+
+int memfs_open(const char *path, int flags) {
+    if (path[0] == '/' && path[1] == 'm' && path[2] == 'n')
+        return 0; // solo acepta un archivo
+    return -1;
+}
+
+int memfs_close(int fd) {
+    return 0;
+}
+
+int memfs_read(int fd, void *buf, unsigned int count) {
+    const char *fake = "Desde memfs.";
+    unsigned int i;
+    for (i = 0; i < count && fake[i]; i++)
+        ((char*)buf)[i] = fake[i];
+    return i;
+}
+
+int memfs_write(int fd, const void *buf, unsigned int count) {
+    return count; // descartamos, pero simulamos éxito
+}
 
 
 
@@ -55,7 +78,10 @@ void k_clear_screen();
 #include "include/memory/sharedmemory.h"
 #include "include/drivers/vesa/vesa.h"
 #include "include/drivers/mouse/mouse.h"
+#include "include/drivers/ps2/drv.h"
+#include "./rtc.h"
 #include "fs/k_printf_xy.h"
+
 
 
 
@@ -79,7 +105,15 @@ typedef unsigned long long uint64_t;
 
 
 
-void kernel_panic();
+
+
+#define VIDEO_MEMORY ((unsigned short*)0xB8000)
+#define SCREEN_WIDTH 80
+
+void text_draw(int x, int y, char c, unsigned char color) {
+    unsigned short attribute = ((unsigned short)color << 8) | c;
+    VIDEO_MEMORY[y * SCREEN_WIDTH + x] = attribute;
+}
 
 
 
@@ -191,6 +225,35 @@ void stop_tone() {
 #include "include/disk.h"
 #include "include/INFO.h"
 
+
+void bear_panic(const char *msg) {
+    
+    for (int y = 0; y < 25; y++) {
+        for (int x = 0; x < 80; x++)
+            text_draw(x, y, ' ', 0x4C);  
+    }
+    const char *header = "PANIC ERROR ";
+    int x = (80 - 18) / 2;
+    for (int i = 0; header[i]; i++)
+        text_draw(x + i, 5, header[i], 0x47);  
+
+    int y = 8;
+    for (int i = 0; msg[i] && y < 24; i++) {
+        text_draw((i % 60) + 10, y, msg[i], 0x47); 
+        if (i % 60 == 59) y++;
+    }
+
+    // Loop infinito
+    while (1) {
+        __asm__ volatile ("hlt");
+    }
+}
+
+
+
+
+
+
 void delay(int time) {
 	volatile long count = 1000000 * time;
 	while(count--); 
@@ -294,24 +357,65 @@ void CR_W() {
 #define CONFIG_DATA 0xCFC
 
 
+
+int uptime_seconds = 0;
+
+void timer_tick() {
+    static int ticks = 0;
+    ticks++;
+    if (ticks >= 100) {   // supón 100 ticks = 1 segundo
+        ticks = 0;
+        uptime_seconds++;
+    }
+}
+
+void cmd_uptime() {
+    char msg[32];
+    int sec = uptime_seconds;
+    int min = sec / 60;
+    sec %= 60;
+
+    int i = 0;
+    msg[i++] = 'U'; msg[i++] = 'p'; msg[i++] = 't'; msg[i++] = 'i'; msg[i++] = 'm'; msg[i++] = 'e';
+    msg[i++] = ':'; msg[i++] = ' ';
+    msg[i++] = '0' + min / 10;
+    msg[i++] = '0' + min % 10;
+    msg[i++] = 'm';
+    msg[i++] = ' ';
+    msg[i++] = '0' + sec / 10;
+    msg[i++] = '0' + sec % 10;
+    msg[i++] = 's';
+    msg[i] = '\0';
+
+    for (int j = 0; msg[j]; j++){
+        text_draw(j, 20, msg[j], 0x0B); // línea 20, color cian
+}
+}
+
+
+
 void W_MSG() {
     k_clear_screen();
-    k_printf("BearOS (language:", 0, WHITE_TXT);
-    k_printf_xy("EN", 18,0, BLUE_TXT);
-    k_printf_xy(")", 20, 0, WHITE_TXT);
-    k_printf("login: root (without password)", 2, WHITE_TXT);
-    k_printf("If you are new, you may find BearOS documentation helpful for more information:", 4, WHITE_TXT);
-    k_printf("   - https://bearos.vercel.app/", 5, BLUE_TXT);
-    k_printf("*) BearOS is fully configured for use (default configuration)", 7, ORANGE_TXT);
-    k_printf_xy("*", 0, 8, RED_TXT_BG);
-    k_printf_xy("*",1, 8, AQUA_TXT_BG);
-    k_printf_xy("*", 2, 8, WHITE_TXT_BG);
-    k_printf_xy("*", 3, 8, BLUE_TXT_BG);
-    k_printf_xy("*", 4, 8, GREEN_TXT_BG); 
-    k_printf_xy("*", 5, 8, PURPLE_TXT_BG);
-    k_printf_xy("*", 6, 8, PINK_TXT_BG);
-    k_printf_xy("*", 7, 8, BLUE_TXT_BG);
-    k_printf_xy("*", 8,8, RED_TXT_BG);
+    k_printf("root@bear", 0, WHITE_TXT);
+    k_printf("---------", 1, WHITE_TXT);
+    k_printf("OS: BearOS x86 (KERNEL)", 2, WHITE_TXT);
+    k_printf("Shell: bash_bear x86_a6", 3, WHITE_TXT);
+    k_printf("FileSystem: FAT32 (default)", 4, WHITE_TXT);
+    
+    // COLORS in TEXT.
+    
+    k_printf_xy("OS",0, 2, RED_TXT);
+    k_printf_xy("Shell",0, 3, RED_TXT);
+    k_printf_xy("FileSystem",0, 4, RED_TXT);
+    
+    k_printf_xy("  ", 6,6, BLACK_BG);
+    k_printf_xy("  ", 8,6, GRAY_BG);
+    k_printf_xy("  ", 10,6, RED_BG);
+    k_printf_xy("  ", 12,6, ORANGE_BG);
+    k_printf_xy("  ", 14,6, PINK_BG);
+   
+
+    
 }
 
 
@@ -625,6 +729,40 @@ void create_new_file(const char *filename, const char *content) {
     file_count++;
 }
 
+int fs_write(const char* filename, const char* content, unsigned int size) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (custom_strcmp(file_table[i].name, filename) == 0) {
+            custom_strcpy(file_table[i].content, content);
+            file_table[i].size = size;
+            return 0;
+        }
+    }
+
+    // Si no existe, crear uno nuevo
+    if (file_count >= MAX_FILES) return -1;
+
+    custom_strcpy(file_table[file_count].name, filename);
+    custom_strcpy(file_table[file_count].content, content);
+    file_table[file_count].size = size;
+    file_table[file_count].start_block = directory_count * 16 + file_count;
+    file_count++;
+    return 0;
+}
+
+
+int fs_read(const char* filename, char* out_buf, unsigned int max_size) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (custom_strcmp(file_table[i].name, filename) == 0) {
+            if (file_table[i].size > max_size) return -2;
+
+            custom_strcpy(out_buf, file_table[i].content);
+            return file_table[i].size;
+        }
+    }
+    return -1; // archivo no encontrado
+}
+
+
 void remove_file(const char *filename) {
     for (unsigned int i = 0; i < file_count; i++) {
         if (custom_strcmp(file_table[i].name, filename) == 0) {
@@ -785,6 +923,16 @@ int rmdir(const char *dirname) {
     k_printf("Error: Directory not found.\n", 0, RED_TXT);
     return -1;
 }
+
+
+
+
+
+
+
+
+
+
 
 // CD
 
@@ -1411,6 +1559,151 @@ void put_char(char c) {
 
 
 
+// TVFS (The VIrtual File System)
+
+
+#define VFS_TYPE_LENGTH 32
+#define VFS_PATH_LENGTH 64
+#define MAX_MOUNTPOINTS 12
+#define MAX_OPENED_FILES 32
+#define ERROR -1
+
+typedef struct {
+    int (*open)(const char *path, int flags);
+    int (*close)(int fd);
+    int (*read)(int fd, void *buf, unsigned int count);
+    int (*write)(int fd, const void *buf, unsigned int count);
+} fs_operations_t;
+
+typedef struct {
+    char type[VFS_TYPE_LENGTH];
+    char mountpoint[VFS_PATH_LENGTH];
+    fs_operations_t operations;
+} mountpoint_t;
+
+typedef struct {
+    int fs_file_id;
+    int mountpoint_id;
+    char *filename;
+    int file_size;
+    int buf_read_pos;
+} file_descriptor_t;
+
+mountpoint_t mountpoints[MAX_MOUNTPOINTS];
+int mountpoints_count = 0;
+
+file_descriptor_t vfs_opened_files[MAX_OPENED_FILES];
+
+int vfs_mount(const char *type, const char *mountpoint, fs_operations_t ops) {
+    if (mountpoints_count >= MAX_MOUNTPOINTS)
+        return ERROR;
+
+    mountpoint_t *m = &mountpoints[mountpoints_count++];
+    for (int i = 0; i < VFS_TYPE_LENGTH; i++) m->type[i] = type[i];
+    for (int i = 0; i < VFS_PATH_LENGTH; i++) m->mountpoint[i] = mountpoint[i];
+    m->operations = ops;
+
+    return 0;
+}
+
+int get_mountpoint_id(const char *path) {
+    for (int i = 0; i < mountpoints_count; i++) {
+        // Aquí puedes mejorar con strncmp
+        int match = 1;
+        for (int j = 0; mountpoints[i].mountpoint[j] && path[j]; j++) {
+            if (mountpoints[i].mountpoint[j] != path[j]) {
+                match = 0;
+                break;
+            }
+        }
+        if (match)
+            return i;
+    }
+    return ERROR;
+}
+
+int vfs_open(const char *path, int flags) {
+    int mp_id = get_mountpoint_id(path);
+    if (mp_id == ERROR)
+        return ERROR;
+
+    mountpoint_t *mp = &mountpoints[mp_id];
+    int fs_fd = mp->operations.open(path, flags);
+    if (fs_fd == ERROR)
+        return ERROR;
+
+    for (int i = 0; i < MAX_OPENED_FILES; i++) {
+        if (vfs_opened_files[i].fs_file_id == -1) {
+            vfs_opened_files[i].fs_file_id = fs_fd;
+            vfs_opened_files[i].mountpoint_id = mp_id;
+            vfs_opened_files[i].filename = (char *)path;
+            vfs_opened_files[i].buf_read_pos = 0;
+            return i;
+        }
+    }
+    return ERROR;
+}
+
+int vfs_read(int fd, void *buf, unsigned int count) {
+    if (fd < 0 || fd >= MAX_OPENED_FILES)
+        return ERROR;
+
+    file_descriptor_t *fdesc = &vfs_opened_files[fd];
+    if (fdesc->fs_file_id == -1)
+        return ERROR;
+
+    mountpoint_t *mp = &mountpoints[fdesc->mountpoint_id];
+    return mp->operations.read(fdesc->fs_file_id, buf, count);
+}
+
+int vfs_close(int fd) {
+    if (fd < 0 || fd >= MAX_OPENED_FILES)
+        return ERROR;
+
+    file_descriptor_t *fdesc = &vfs_opened_files[fd];
+    if (fdesc->fs_file_id == -1)
+        return ERROR;
+
+    mountpoint_t *mp = &mountpoints[fdesc->mountpoint_id];
+    int result = mp->operations.close(fdesc->fs_file_id);
+    if (result == 0)
+        fdesc->fs_file_id = -1;
+
+    return result;
+}
+
+void vfs_init() {
+    for (int i = 0; i < MAX_OPENED_FILES; i++) {
+        vfs_opened_files[i].fs_file_id = -1;
+    }
+}
+void vfs_list_mountpoints(int start_row) {
+    const char *title = "Mountpoints activos:";
+    for (int i = 0; title[i]; i++)
+        text_draw(i, start_row, title[i], 0x0F); // línea de título
+
+    for (int i = 0; i < mountpoints_count; i++) {
+        int col = 0;
+        const char *prefix = "- ";
+        for (int j = 0; prefix[j]; j++)
+            text_draw(col++, start_row + i + 1, prefix[j], 0x0A); // color verde
+
+        for (int j = 0; mountpoints[i].mountpoint[j] && col < 80; j++)
+            text_draw(col++, start_row + i + 1, mountpoints[i].mountpoint[j], 0x0F);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1473,6 +1766,83 @@ void display_stats() {
     k_printf_center("Writting for exit", 21, WHITE_TXT);
 }
 
+
+
+// FONT's System.
+// Tipos mínimos
+typedef unsigned char  u8;
+typedef unsigned int   u32;
+
+
+// Framebuffer (dirección ficticia, cámbiala por la real)
+u32* framebuffer = (u32*)0xE0000000;
+u32 screen_width = 1024;
+u32 screen_height = 768;
+
+// Fuente binaria 8x16 (cada carácter ocupa 16 bytes)
+u8 font_default[] = {
+    // ← pega aquí tu arreglo completo font_default[]
+};
+
+// Pinta un píxel en pantalla
+void put_pixel(u32 x, u32 y, u32 color) {
+    if (x < screen_width && y < screen_height) {
+        framebuffer[y * screen_width + x] = color;
+    }
+}
+
+// Dibuja un carácter escalado desde font_default[]
+void draw_char(int x, int y, char c, int scale, u32 color) {
+    int index = (int)c * 16; // 16 bytes por carácter
+    for (int row = 0; row < 16; row++) {
+        u8 row_data = font_default[index + row];
+        for (int col = 0; col < 8; col++) {
+            if (row_data & (1 << (7 - col))) {
+                for (int dy = 0; dy < scale; dy++) {
+                    for (int dx = 0; dx < scale; dx++) {
+                        put_pixel(x + col * scale + dx, y + row * scale + dy, color);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Imprime texto con soporte de salto de línea (\n)
+void draw_text(int x, int y, const char* text, int scale, u32 color) {
+    int orig_x = x;
+    while (*text) {
+        if (*text == '\n') {
+            x = orig_x;
+            y += 16 * scale;
+        } else {
+            draw_char(x, y, *text, scale, color);
+            x += 8 * scale;
+        }
+        text++;
+    }
+}
+
+
+
+/*
+ *
+ * how to use:
+void kernel_main() {
+    draw_text(50, 50, "A A A A", 4, 0x00FF00); // green
+    while (1) {} // loop
+}
+*/
+
+
+
+
+
+
+
+
+
+
 void process_input_logged() {
     input_buffer[input_index] = '\0'; 
 
@@ -1500,9 +1870,16 @@ void process_input() {
         k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
     } 
+   
+   
+   if (strcmp(input_buffer, "uptime") == 0) {
+   	cursor_y++;
+        cmd_uptime(cursor_y); 
+        
+    } 
     else if(strncmp(input_buffer, "     ", 5) == 0) {
-    const char *value = input_buffer + 5;
-    evaluate_expression(value);
+    	const char *value = input_buffer + 5;
+   	 evaluate_expression(value);
     }
 
     else if(strcmp(input_buffer, "lsk") == 0) {
@@ -1539,6 +1916,28 @@ void process_input() {
         cursor_y = cursor_y + 1;
      	const char *cmd = input_buffer + 6;
     	save_command(cmd);
+    }
+    
+    else if (strncmp(input_buffer, "vfs ", 4) == 0) {
+        cursor_y = cursor_y + 4;
+     	const char *mnt_name = input_buffer + 4;
+
+    		
+    	fs_operations_t memfs_ops = {
+		.open = memfs_open,
+		.close = memfs_close,
+		.read = memfs_read,
+		.write = memfs_write
+	    };
+
+    		vfs_mount(mnt_name, "/mnt", memfs_ops);
+    		k_printf("A 'mnt' has been created successfully!", cursor_y++, GREEN_TXT);
+    }
+    
+    
+    
+    else if (strcmp(input_buffer, "vfslist") == 0) {
+    vfs_list_mountpoints(12);
     }
     else if (strcmp(input_buffer, "history") == 0)  {
     	k_clear_screen();
@@ -1606,23 +2005,7 @@ else if (strcmp(input_buffer, "sniff") == 0) {
                                                                                       
            k_clear_screen();
 
-           k_printf(" 000                000 ", 0, ORANGE_TXT);
-           k_printf("0 1 0             0 1 0", 1, ORANGE_TXT);
-           k_printf("0  1 000000000000  1  0", 2, ORANGE_TXT);
-           k_printf(" 0                   0 ", 3, ORANGE_TXT);
-           k_printf(" 0    0        0     0 ", 4, ORANGE_TXT);
-           k_printf(" 0                   0 ",5, ORANGE_TXT);
-           k_printf(" 0         1        0 ",6, ORANGE_TXT);
-           k_printf(" 0  0000000000000  0  ",7, ORANGE_TXT);
-           k_printf("  00      ---    00   ",8, ORANGE_TXT);
-           k_printf("   00           00",9, ORANGE_TXT);
-           k_printf("    0000000000000", 10, ORANGE_TXT);
-          
-
-           k_printf_xy("root@bearos", 24, 1, WHITE_TXT);
-           k_printf_xy("------------", 24, 2, ORANGE_TXT);
-           k_printf_xy("User: root (default)", 24, 3, WHITE_TXT);
-           k_printf_xy("Locale: en_US.UTF-8", 24, 4, WHITE_TXT);
+           W_MSG();
     }
     
 
@@ -1936,13 +2319,181 @@ volatile int ctrl_pressed = 0;
 //add_log("Kernel initialized successfully.", get_system_time(), INFO);
 
 
+// PCI WIFI
+
+#define RTL8139_VENDOR_ID 0x10EC
+#define RTL8139_DEVICE_ID 0x8139
+
+typedef unsigned char  u8;
+typedef unsigned short u16;
+typedef unsigned int   u32;
+
+
+
+u16 pci_config_read_word(u8 bus, u8 slot, u8 func, u8 offset) {
+    u32 address = (1 << 31) | (bus << 16) | (slot << 11) |
+                  (func << 8) | (offset & 0xFC);
+    outl(0xCF8, address);
+    return (u16)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xFFFF);
+}
+
+u32 pci_config_read_dword(u8 bus, u8 slot, u8 func, u8 offset) {
+    u32 address = (1 << 31) | (bus << 16) | (slot << 11) |
+                  (func << 8) | (offset & 0xFC);
+    outl(0xCF8, address);
+    return inl(0xCFC);
+}
+
+typedef struct {
+    u32 io_base;
+    u8 mac[6];
+    u8* rx_buffer;
+} rtl8139_dev_t;
+
+rtl8139_dev_t rtl_dev;
+
+// 💥 Reset WITH Init
+void rtl8139_init(u32 io) {
+    rtl_dev.io_base = io;
+    rtl_dev.rx_buffer = (u8*)0x00400000; 
+
+    // Reset
+    outb(io + 0x37, 0x10);
+    while (inb(io + 0x37) & 0x10);
+
+    // RX buffer
+    outl(io + 0x30, (u32)rtl_dev.rx_buffer);
+
+    
+    outb(io + 0x37, 0x0C);
+
+    
+    outl(io + 0x44, 0x0000070F); 
+
+    // GET MAC
+    for (int i = 0; i < 6; i++) {
+        rtl_dev.mac[i] = inb(io + i);
+    }
+}
+
+// 🔍 Search RTL8139 with PCI
+void pci_scan_for_rtl8139() {
+    for (u8 bus = 0; bus < 256; bus++) {
+        for (u8 slot = 0; slot < 32; slot++) {
+            u16 vendor = pci_config_read_word(bus, slot, 0, 0x00);
+            if (vendor == 0xFFFF) continue;
+
+            u16 device = pci_config_read_word(bus, slot, 0, 0x02);
+            if (vendor == RTL8139_VENDOR_ID && device == RTL8139_DEVICE_ID) {
+                u32 bar0 = pci_config_read_dword(bus, slot, 0, 0x10);
+                u32 io_base = bar0 & ~0x3;
+                rtl8139_init(io_base);
+                return;
+            }
+        }
+    }
+}
+
+
+
+
+void speaker_beep(u32 freq, u32 duration_ms) {
+    u16 divisor = 1193182 / freq;
+
+    
+    outb(0x43, 0xB6);                  
+    outb(0x42, (u8)(divisor & 0xFF)); 
+    outb(0x42, (u8)(divisor >> 8));    
+
+   
+    u8 val = inb(0x61);
+    outb(0x61, val | 0x03);
+
+    
+    for (u32 i = 0; i < duration_ms * 1000; i++) {
+        __asm__ __volatile__("nop");
+    }
+
+    // Speaker OFF.
+    val = inb(0x61) & 0xFC;
+    outb(0x61, val);
+}
+
+void print_mac(u8* mac, u32 x, u32 y, u32 color) {
+    char hex[] = "0123456789ABCDEF";
+    char buf[20];
+    int i = 0;
+
+    for (int j = 0; j < 6; j++) {
+        buf[i++] = hex[(mac[j] >> 4) & 0xF];
+        buf[i++] = hex[mac[j] & 0xF];
+        if (j != 5)
+            buf[i++] = ':';
+    }
+    buf[i] = '\0';
+    k_printf(buf, y, color);
+}
+
+
+
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
 {
 
-	CR_W();
-    delay(200);
-    W_MSG();
 
+    CR_W();
+    delay(100);
+    W_MSG();
+    vfs_init();
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+/*
+    fs_operations_t memfs_ops = {
+        .open = memfs_open,
+        .close = memfs_close,
+        .read = memfs_read,
+        .write = memfs_write
+    };*/
+
+  
+
+ /*
+    int fd = vfs_open("/mnt/archivo.txt", 0);  
+
+    if (fd != -1) {
+        char buffer[32];
+        int read_count = vfs_read(fd, buffer, 31);
+        buffer[read_count] = '\0';  
+
+      
+        for (int i = 0; buffer[i]; i++)
+            text_draw(i, 10, buffer[i], 0x0F); 
+        vfs_close(fd);
+    } else {
+        const char* msg = "No se pudo abrir :,(";
+        for (int i = 0; msg[i]; i++)
+            text_draw(i, 12, msg[i], 0x4E); 
+    }
+    
+    */
+
+ 
+    
+    //print_mac(rtl_dev.mac, 180, 1, 0x00FF00);
+    // rtc_init(); <-- RTC test sys.
+    
+    //pci_scan_for_rtl8139();
     cursor_x = 0;
     cursor_y = 19; 
 
