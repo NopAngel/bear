@@ -89,17 +89,18 @@ void rtc_format_time(char* buf, rtc_time_t* t) {
 }
 
 void rtc_init() {
-    // Deshabilitar NMI temporalmente (bit 7 en 0x70)
+   
     u8 prev = inb(CMOS_ADDRESS);
     outb(CMOS_ADDRESS, REG_STATUSB);
     u8 statusB = inb(CMOS_DATA);
 
-    // Activar la interrupción periódica si querés usar IRQ8 en el futuro
+
     outb(CMOS_ADDRESS, REG_STATUSB);
     outb(CMOS_DATA, statusB | 0x40);
 
-    // Limpiar cualquier bandera de interrupción (leyendo C)
+
     outb(CMOS_ADDRESS, 0x0C);
     inb(CMOS_DATA);
+    /// RTC INIT with MAIN CFG
 }
 

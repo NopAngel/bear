@@ -890,10 +890,7 @@ int mkdir(const char *dirname) {
     directory_table[directory_count].size = 1; 
     directory_count++; 
 
-    k_printf("Directory's created: ", cursor_y++, GREEN_TXT);
-    k_printf_no_newline(dirname, 0, WHITE_TXT);
-    k_printf_no_newline("\n", 0, WHITE_TXT);
-
+    k_printf("Directory's created.", cursor_y++, GREEN_TXT);
     return 0;
 }
 
@@ -1870,6 +1867,10 @@ void process_input() {
         k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
     } 
+
+    else if (strcmp(input_buffer, "cdback") == 0) {
+        cd_back();
+    }
    
    
    if (strcmp(input_buffer, "uptime") == 0) {
@@ -2036,7 +2037,7 @@ else if (strcmp(input_buffer, "sniff") == 0) {
     else if (strncmp(input_buffer, "touch ", 6) == 0) {
         const char *filename = input_buffer + 6;
   
-	k_printf("Created new file!", cursor_y++, GREEN_TXT);
+	    k_printf("Created new file!", cursor_y++, GREEN_TXT);
         touch(filename, "");
     }
     
@@ -2435,28 +2436,56 @@ void print_mac(u8* mac, u32 x, u32 y, u32 color) {
 }
 
 
+static void play_sound(uint32_t nFrequence) {
+ 	uint32_t Div;
+ 	uint8_t tmp;
+ 
+        //Set the PIT to the desired frequency
+ 	Div = 1193180 / nFrequence;
+ 	outb(0x43, 0xb6);
+ 	outb(0x42, (uint8_t) (Div) );
+ 	outb(0x42, (uint8_t) (Div >> 8));
+ 
+        //And play the sound using the PC speaker
+ 	tmp = inb(0x61);
+  	if (tmp != (tmp | 3)) {
+ 		outb(0x61, tmp | 3);
+ 	}
+ }
+ 
+ //make it shut up
+ static void nosound() {
+ 	uint8_t tmp = inb(0x61) & 0xFC;
+     
+ 	outb(0x61, tmp);
+ }
+
+void wait(uint32_t ticks) {
+    for (volatile uint32_t i = 0; i < ticks * 1000; i++) {
+        // No hacer nada, solo perder tiempo
+    }
+}
+
+void beep() {
+    play_sound(1000);  // 1000 Hz = un beep clásico
+    wait(50);          // Ajusta este valor si el beep es muy corto o largo
+    nosound();
+}
+
+
+
+
+
 
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
 {
-
 
     CR_W();
     delay(100);
     W_MSG();
     vfs_init();
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
 /*
     fs_operations_t memfs_ops = {

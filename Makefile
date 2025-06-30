@@ -22,6 +22,7 @@ DISK_IMAGE=fat12.img
 
 compile:
 	nasm -f elf32 kernel.asm -o kasm.o
+	nasm -f elf32 sound_blaster.s -o sound_blaster.o
 	gcc -m32 -fno-stack-protector -c kernel.c -o kc.o
 	gcc -m32 -fno-stack-protector -c fs/k_printf.c -o k_print.o
 	gcc -m32 -fno-stack-protector -c reboot.c -o reboot.o
@@ -36,7 +37,7 @@ compile:
 	gcc -m32 -fno-stack-protector -c include/drivers/ps2/drv.c -o drv.o
 	gcc -m32 -fno-stack-protector -c ./rtc.c -o rtc.o
 	gcc -m32 -fno-stack-protector -c fs/k_printf_xy.c -o krpzq.o
-	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o kc.o k_print.o reboot.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o
+	ld -m elf_i386 -T link.ld -o $(KERNEL_BIN) kasm.o sound_blaster.o kc.o k_print.o reboot.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o
 iso: compile
 	mkdir -p iso/boot/grub
 	cp $(KERNEL_BIN) iso/boot/

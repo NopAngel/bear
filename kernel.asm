@@ -19,10 +19,17 @@ section .text
 global start
 extern k_main	;k_main is defined in the kernel.c file
 global load_idt
+global detect_v86
 
 load_idt:
     lidt [eax]  ; Carga la IDT desde el puntero en EAX
     ret
+
+detect_v86: 
+   smsw    ax
+   and     eax,1           ;CR0.PE bit
+   ret
+
 
 start:
 	cli  ; stop interrupts
