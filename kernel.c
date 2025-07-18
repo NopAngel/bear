@@ -29,6 +29,8 @@ int memfs_close(int fd) {
     return 0;
 }
 
+
+
 int memfs_read(int fd, void *buf, unsigned int count) {
     const char *fake = "Desde memfs.";
     unsigned int i;
@@ -88,8 +90,9 @@ void k_clear_screen();
 
 void set_background_color(const char *color_name);
 unsigned int k_printf(char *message, unsigned int line, unsigned int color);
-unsigned int k_printf_no_newline(const char *message, unsigned int line, unsigned int color);
 unsigned int k_printf_center(char *message, unsigned int line, unsigned int color);
+
+
 typedef unsigned char uint8_t;  
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;  
@@ -224,6 +227,11 @@ void stop_tone() {
 #include "include/keyboard.h"
 #include "include/disk.h"
 #include "include/INFO.h"
+static inline unsigned char inb(unsigned short port) {
+    unsigned char value;
+    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
 
 
 void bear_panic(const char *msg) {
@@ -248,6 +256,15 @@ void bear_panic(const char *msg) {
         __asm__ volatile ("hlt");
     }
 }
+
+
+
+
+
+// BEAR INSTALL FNC
+
+
+
 
 
 
@@ -443,6 +460,8 @@ int strcmp(const char *str1, const char *str2) {
 }
 
 
+
+
 int strncmp(const char *str1, const char *str2, unsigned int n) {
     while (n && *str1 && (*str1 == *str2)) {
         str1++;
@@ -516,11 +535,6 @@ unsigned int custom_strlen(const char *str) {
 
 
 
-static inline unsigned char inb(unsigned short port) {
-    unsigned char value;
-    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
-    return value;
-}
 
 
 void clear_memory(char *buffer, unsigned int length) {
@@ -532,6 +546,8 @@ void clear_memory(char *buffer, unsigned int length) {
 
 
 //LOGS
+
+
 
 
 #define MAX_LOG_ENTRIES 50  // 🔥 Número máximo de logs en memoria
@@ -893,6 +909,8 @@ int mkdir(const char *dirname) {
     k_printf("Directory's created.", cursor_y++, GREEN_TXT);
     return 0;
 }
+
+
 
 int rmdir(const char *dirname) {
     if (directory_count == 0) {
@@ -1549,6 +1567,504 @@ void put_char(char c) {
 
 
 
+//snprintf
+
+
+
+
+
+
+
+
+
+
+
+//===========
+
+// ATOI
+
+// ===== [ atoi IMPLEMENTATION ] =====
+int atoi(const char *str) {
+    int result = 0;      // Almacena el resultado
+    int sign = 1;        // Signo positivo/negativo
+    int i = 0;           // Índice para recorrer el string
+    
+    // 1. Saltar espacios en blanco iniciales
+    while (str[i] == ' ' || str[i] == '\t' || str[i] == '\n') {
+        i++;
+    }
+    
+    // 2. Manejar signo positivo/negativo
+    if (str[i] == '-') {
+        sign = -1;
+        i++;
+    } else if (str[i] == '+') {
+        i++;
+    }
+    
+    // 3. Convertir dígitos a número
+    while (str[i] >= '0' && str[i] <= '9') {
+        // Multiplicar resultado actual por 10 y sumar nuevo dígito
+        result = result * 10 + (str[i] - '0');
+        i++;
+    }
+    
+    // 4. Aplicar signo y retornar
+    return sign * result;
+}
+
+
+
+
+// En bearinstall_config_screen al final:
+
+
+// ===== [ strcat IMPLEMENTATION ] =====
+char* strcat(char *dest, const char *src) {
+    char *ptr = dest;
+    
+    // Find end of dest
+    while (*ptr) ptr++;
+    
+    // Copy src to end
+    while (*src) {
+        *ptr++ = *src++;
+    }
+    
+    // Null terminate
+    *ptr = '\0';
+    return dest;
+}
+
+
+// ===== [ USER MANAGEMENT STRUCTURES ] =====
+typedef struct {
+    char username[32];
+    char password[32];
+    int uid;
+    int is_admin;
+    char home_dir[64];
+} UserEntry;
+
+#define MAX_USERS 50
+UserEntry user_table[MAX_USERS];
+int user_count = 0;
+
+// System states
+enum SystemState {
+    STATE_SHELL,
+    STATE_BEARINSTALL,
+    STATE_USER_CONFIG
+};
+
+// Global state variables
+enum SystemState current_state = STATE_SHELL;
+UserEntry current_user;  // Moved to global scope
+
+
+
+// ===== [ USER MANAGEMENT FUNCTIONS ] =====
+
+
+
+void save_user_to_disk(UserEntry *user);
+void finalize_user_creation(void);
+void bearinstall_config_screen(void);
+void bearinstall_create_user(void);
+void usrlist(void);
+void usrcreate(void);
+void usrremove(const char *username);
+
+/* ===== [ IMPLEMENTACIÓN DE FUNCIONES DE USUARIOS ] ===== */
+// Añade esto en tu kernel.c después de las funciones existentes
+
+void save_user_to_disk(UserEntry *user) {
+    if (user_count >= MAX_USERS) return;
+    
+    // Construir entrada: username:password:uid:is_admin:home_dir
+    char entry[256];
+    int pos = 0;
+    
+    // Copiar username
+    const char *u = user->username;
+    while (*u && pos < sizeof(entry) - 1) {
+        entry[pos++] = *u++;
+    }
+    
+    // Separador
+    if (pos < sizeof(entry) - 1) entry[pos++] = ':';
+    
+    // Copiar password
+    const char *p = user->password;
+    while (*p && pos < sizeof(entry) - 1) {
+        entry[pos++] = *p++;
+    }
+    
+    // Separador
+    if (pos < sizeof(entry) - 1) entry[pos++] = ':';
+    
+    // Convertir UID a string
+    int temp = user->uid;
+    char uid_str[16];
+    int uid_len = 0;
+    
+    // Manejar caso especial para 0
+    if (temp == 0) {
+        uid_str[uid_len++] = '0';
+    } else {
+        while (temp > 0) {
+            uid_str[uid_len++] = '0' + (temp % 10);
+            temp /= 10;
+        }
+    }
+    
+    // Copiar UID invertido
+    for (int i = uid_len - 1; i >= 0; i--) {
+        if (pos < sizeof(entry) - 1) {
+            entry[pos++] = uid_str[i];
+        }
+    }
+    
+    // Separador y admin
+    if (pos < sizeof(entry) - 1) entry[pos++] = ':';
+    if (pos < sizeof(entry) - 1) entry[pos++] = user->is_admin ? '1' : '0';
+    if (pos < sizeof(entry) - 1) entry[pos++] = ':';
+    
+    // Copiar home_dir
+    const char *h = user->home_dir;
+    while (*h && pos < sizeof(entry) - 1) {
+        entry[pos++] = *h++;
+    }
+    
+    // Finalizar string
+    entry[pos] = '\0';
+    
+    // Guardar en /etc/passwd
+    fs_write("/etc/passwd", entry, pos);
+}
+
+void finalize_user_creation(void) {
+    save_user_to_disk(&current_user);
+    user_count++;
+    
+    // Crear directorio home
+    mkdir(current_user.home_dir);
+    
+    // Mostrar confirmación
+    k_clear_screen();
+    k_printf_xy("User setup complete! Returning to shell...", 20, 12, GREEN_TXT);
+    delay(2000);
+    
+    // Restaurar estado shell
+    current_state = STATE_SHELL;
+    k_clear_screen();
+    cursor_x = 0;
+    cursor_y = 0;
+    W_MSG();  // Redibujar interfaz shell
+}
+
+/* ===== [ INSTALADOR BEARINSTALL ] ===== */
+// Función principal del instalador
+
+void bearinstall_create_user(void) {
+    // Inicializar current_user manualmente
+    for (unsigned int i = 0; i < sizeof(UserEntry); i++) {
+        ((char*)&current_user)[i] = 0;
+    }
+    
+    // ... [Aquí va tu código existente para recolectar usuario/contraseña] ...
+    
+    // Establecer valores iniciales
+    current_user.uid = 1000 + user_count;
+    
+    // Construir home_dir: "/home/username"
+    const char *home_pref = "/home/";
+    char *dest_ptr = current_user.home_dir;
+    
+    // Copiar "/home/"
+    while (*home_pref) {
+        *dest_ptr++ = *home_pref++;
+    }
+    
+    // Añadir username
+    const char *u_ptr = current_user.username;
+    while (*u_ptr) {
+        *dest_ptr++ = *u_ptr++;
+    }
+    *dest_ptr = '\0';
+    
+    // Cambiar al estado de configuración
+    current_state = STATE_USER_CONFIG;
+}
+
+void bearinstall_config_screen(void) {
+    // Variables para la configuración
+    int selected_option = 0;
+    int total_options = 4;
+    unsigned char last_sc = 0;
+    int save_config = 0;
+    
+    // Config options
+    int is_admin = 0;
+    int set_timezone = 0;
+    int enable_network = 1;
+    int install_drivers = 1;
+    
+    // Timezone options
+    const char *timezones[] = {"UTC", "EST", "PST", "CET", "GMT"};
+    int tz_index = 0;
+    int tz_count = sizeof(timezones) / sizeof(timezones[0]);
+
+    while (!save_config) {
+        // Dibujar ventana de configuración
+        k_clear_screen();
+        
+        // ... [Código para dibujar la interfaz Windows 98] ...
+        
+        // Mostrar información del usuario
+        k_printf_xy("Configuring user:", 17, 5, 0x70);
+        k_printf_xy(current_user.username, 35, 5, 0x07);
+        
+        // Mostrar opciones
+        k_printf_xy("1. Administrator privileges:", 17, 7, 
+                     selected_option == 0 ? 0x0F : 0x07);
+        k_printf_xy(is_admin ? "[X]" : "[ ]", 45, 7, 
+                     selected_option == 0 ? 0x0F : 0x07);
+        
+        // ... [Otras opciones] ...
+        
+        // Instrucciones
+        k_printf_xy("Enter=Toggle  Arrows=Navigate", 17, 17, 0x07);
+        k_printf_xy("Esc=Save config", 17, 18, 0x07);
+        k_printf_xy("F1=Use default", 45, 18, 0x07);
+        
+        // Manejar entrada
+        if (keyboard_has_input()) {
+            unsigned char scancode = inb(0x60);
+            
+            if (scancode == 0x01) { // Esc
+                save_config = 1;
+                break;
+            } else if (scancode == 0x3B) { // F1
+                // Configuración por defecto
+                is_admin = 0;
+                tz_index = 0;
+                enable_network = 1;
+                install_drivers = 1;
+            } else if (scancode & 0x80) {
+                continue; // Ignorar liberación de tecla
+            } else {
+                // Navegación
+                if (scancode == 0x48) { // Flecha arriba
+                    if (selected_option > 0) selected_option--;
+                } else if (scancode == 0x50) { // Flecha abajo
+                    if (selected_option < total_options - 1) selected_option++;
+                } else if (scancode == 0x1C) { // Enter
+                    switch (selected_option) {
+                        case 0: is_admin = !is_admin; break;
+                        case 1: tz_index = (tz_index + 1) % tz_count; break;
+                        case 2: enable_network = !enable_network; break;
+                        case 3: install_drivers = !install_drivers; break;
+                    }
+                }
+            }
+        }
+        
+        // Pequeña pausa para reducir parpadeo
+        for (int i = 0; i < 10000; i++) asm volatile("nop");
+    }
+    
+    // Guardar configuración
+    current_user.is_admin = is_admin;
+    
+    // Finalizar creación de usuario
+    finalize_user_creation();
+}
+
+/* ===== [ COMANDOS DE GESTIÓN DE USUARIOS ] ===== */
+// Añade esto en tu sección de comandos
+
+void usrlist(void) {
+    if (user_count == 0) {
+        k_printf("No users found", 0, RED_TXT);
+        return;
+    }
+    
+    k_printf("User List:", 0, CYAN_TXT);
+    k_printf("====================", 1, CYAN_TXT);
+    
+    for (int i = 0; i < user_count; i++) {
+        char line[80];
+        int pos = 0;
+        
+        // Username
+        const char *u = user_table[i].username;
+        while (*u) line[pos++] = *u++;
+        
+        // Padding
+        while (pos < 15) line[pos++] = ' ';
+        
+        // UID
+        line[pos++] = '[';
+        int uid = user_table[i].uid;
+        char uid_str[10];
+        int uid_len = 0;
+        
+        if (uid == 0) {
+            uid_str[uid_len++] = '0';
+        } else {
+            while (uid) {
+                uid_str[uid_len++] = '0' + (uid % 10);
+                uid /= 10;
+            }
+        }
+        
+        // Copiar UID invertido
+        for (int j = uid_len - 1; j >= 0; j--) {
+            line[pos++] = uid_str[j];
+        }
+        line[pos++] = ']';
+        
+        // Admin status
+        if (user_table[i].is_admin) {
+            const char *admin = " ADMIN";
+            while (*admin) line[pos++] = *admin++;
+        }
+        
+        line[pos] = '\0';
+        k_printf(line, i + 2, WHITE_TXT);
+    }
+}
+
+void usrcreate(void) {
+    // Inicializar manualmente
+    UserEntry new_user;
+    for (unsigned int i = 0; i < sizeof(UserEntry); i++) {
+        ((char*)&new_user)[i] = 0;
+    }
+    
+    k_printf("Enter username: ", 0, CYAN_TXT);
+    char c;
+    int index = 0;
+    
+    // Leer username
+    while ((c = get_char()) != '\n' && index < 31) {
+        if (c == '\b' && index > 0) {
+            index--;
+            k_printf_no_newline("\b \b", 0, WHITE_TXT);
+        } else if (c >= 32 && c <= 126) {
+            new_user.username[index++] = c;
+            k_printf_no_newline(&c, 0, WHITE_TXT);
+        }
+    }
+    new_user.username[index] = '\0';
+    
+    k_printf("\nEnter password: ", 1, CYAN_TXT);
+    index = 0;
+    
+    // Leer password
+    while ((c = get_char()) != '\n' && index < 31) {
+        if (c == '\b' && index > 0) {
+            index--;
+            k_printf_no_newline("\b \b", 1, WHITE_TXT);
+        } else if (c >= 32 && c <= 126) {
+            new_user.password[index++] = c;
+            k_printf_no_newline("*", 1, WHITE_TXT);
+        }
+    }
+    new_user.password[index] = '\0';
+    
+    // Establecer UID y home
+    new_user.uid = 1000 + user_count;
+    new_user.is_admin = 0;
+    
+    // Construir home_dir
+    const char *home_pref = "/home/";
+    char *h_ptr = new_user.home_dir;
+    while (*home_pref) *h_ptr++ = *home_pref++;
+    const char *uname = new_user.username;
+    while (*uname) *h_ptr++ = *uname++;
+    *h_ptr = '\0';
+    
+    // Guardar usuario
+    save_user_to_disk(&new_user);
+    user_count++;
+    
+    // Crear directorio home
+    mkdir(new_user.home_dir);
+    
+    k_printf("\nUser created successfully!", 2, GREEN_TXT);
+}
+
+void usrremove(const char *username) {
+    if (user_count == 0) {
+        k_printf("No users found", 0, RED_TXT);
+        return;
+    }
+    
+    int found_index = -1;
+    for (int i = 0; i < user_count; i++) {
+        const char *u = user_table[i].username;
+        const char *c = username;
+        while (*u && *c && *u == *c) {
+            u++;
+            c++;
+        }
+        if (*u == '\0' && *c == '\0') {
+            found_index = i;
+            break;
+        }
+    }
+    
+    if (found_index == -1) {
+        k_printf("User not found", 0, RED_TXT);
+        return;
+    }
+    
+    // Mover usuarios posteriores hacia atrás
+    for (int i = found_index; i < user_count - 1; i++) {
+        // Copiar manualmente
+        for (unsigned int j = 0; j < sizeof(UserEntry); j++) {
+            ((char*)&user_table[i])[j] = ((char*)&user_table[i+1])[j];
+        }
+    }
+    
+    user_count--;
+    
+    // Reconstruir /etc/passwd
+    char new_passwd[1024] = {0};
+    char *ptr = new_passwd;
+    
+    for (int i = 0; i < user_count; i++) {
+        char entry[256];
+        int pos = 0;
+        
+        // Construir entrada manualmente (como en save_user_to_disk)
+        // ... [implementación similar a save_user_to_disk] ...
+        
+        // Copiar al buffer
+        const char *src = entry;
+        while (*src) {
+            *ptr++ = *src++;
+        }
+        *ptr++ = '\n';
+    }
+    
+    // Guardar nuevo archivo
+    fs_write("/etc/passwd", new_passwd, ptr - new_passwd);
+    
+    k_printf("User removed", 0, GREEN_TXT);
+}
+
+/* ===== [ INTEGRACIÓN CON EL SISTEMA PRINCIPAL ] ===== */
+// Modifica tu función process_input
+
+
+
+
+/* ===== [ FUNCIONES AUXILIARES ] ===== */
+// Añade estas implementaciones si no las tienes
+
 
 
 
@@ -1867,9 +2383,33 @@ void process_input() {
         k_printf("Hello, World!", cursor_y, GREEN_TXT); 
         cursor_y++;
     } 
+    else if (strcmp(input_buffer, "bearinstall") == 0) {
+        current_state = STATE_BEARINSTALL;
+    }
+    else if (strcmp(input_buffer, "usrlist") == 0) {
+        usrlist();
+    }
+    else if (strcmp(input_buffer, "usrcreate") == 0) {
+        usrcreate();
+    }
+    else if (strncmp(input_buffer, "usrremove ", 10) == 0) {
+        const char *username = input_buffer + 10;
+        usrremove(username);
+    }
+    
 
     else if (strcmp(input_buffer, "cdback") == 0) {
         cd_back();
+    }
+    else if (strcmp(input_buffer, "usrlist") == 0) {
+        usrlist();
+    }
+    else if (strcmp(input_buffer, "usrcreate") == 0) {
+        usrcreate();
+    }
+    else if (strncmp(input_buffer, "usrremove ", 10) == 0) {
+        const char *username = input_buffer + 10;
+        usrremove(username);
     }
    
    
@@ -2477,9 +3017,54 @@ void beep() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
 {
+    user_count = 0;
+    current_state = STATE_SHELL;
+    
+    // Crear directorio /etc si no existe
+    if (directory_count == 0 || strcmp(directory_table[0].name, "/etc") != 0) {
+        mkdir("/etc");
+    }
+    
+    while (1) {
+        switch (current_state) {
+            case STATE_SHELL:
+                if (keyboard_has_input()) {
+                    keyboard_handler();
+                }
+                break;
+                
+            case STATE_BEARINSTALL:
+                bearinstall_create_user();
+                break;
+                
+            case STATE_USER_CONFIG:
+                bearinstall_config_screen();
+                break;
+        }
+    }
 
+    current_state = STATE_SHELL;
     CR_W();
     delay(100);
     W_MSG();
@@ -2562,6 +3147,22 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
          keyboard_handler_logged();
 
     }
+    
+    switch (current_state) {
+            case STATE_SHELL:
+                if (keyboard_has_input()) {
+                    keyboard_handler();
+                }
+                break;
+                
+            case STATE_BEARINSTALL:
+                bearinstall_create_user();
+                break;
+                
+            case STATE_USER_CONFIG:
+                bearinstall_config_screen();
+                break;
+        }
 
 
 
