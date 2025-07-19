@@ -1,7 +1,7 @@
 <center>
 
 
-<img src="./images/banner.png" style="text-align:center;width:600px;" />
+<img src="./images/banner.png" style="text-align:center;width:800px;margin:0 auto;" />
 
 # BearOS 🐻
 
