@@ -1,8 +1,5 @@
 <center>
 
-
-<img src="./images/banner.png" style="text-align:center;width:800px;margin:0 auto;" />
-
 # BearOS 🐻
 
 A minimalist kernel project written from scratch for learning and experimentation.
