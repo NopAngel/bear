@@ -58,7 +58,7 @@ unsigned int get_system_time() { // SIMULATION
 
 
 
-
+unsigned int current_directory = 0;  // default root
 #define MAX_NAME_LENGTH 256
 #define MAX_CONTENT_LENGTH 1024
 int cursor_x = 0;   
@@ -482,6 +482,14 @@ int custom_strcmp(const char *str1, const char *str2) {
     return *(unsigned char *)str1 - *(unsigned char *)str2;
 }
 
+// Versión BearOS de strchr
+char* find_char(char* str, char c) {
+    while (*str) {
+        if (*str == c) return str;
+        str++;
+    }
+    return 0;
+}
 
 
 char *custom_strcpy(char *dest, const char *src) {
@@ -728,7 +736,8 @@ char virtual_disk[DISK_SIZE];
 
 
 typedef struct {
-    char name[MAX_NAME_LENGTH];  
+    char name[MAX_NAME_LENGTH];
+    unsigned int parent_dir;  
     unsigned int start_block;  
     unsigned int size;           
 } DirectoryEntry;
@@ -803,6 +812,119 @@ int rmfile(const char *filename) {
 	return 0;
 }
 
+// ===== [ COMANDOS PERSONALIZADOS ] =====
+#define MAX_HISTORY 100
+char command_history[MAX_HISTORY][128];
+int history_count = 0;
+
+// Estructura para procesos
+typedef struct {
+    int pid;
+    char name[32];
+} Process;
+Process process_table1[50];
+int process_count = 0;
+
+int fs_rename(const char *src, const char *dest) {
+    // Implementación básica de renombrar
+    for (int i = 0; i < file_count; i++) {
+        if (strcmp(file_table[i].name, src) == 0) {
+            strcpy(file_table[i].name, dest);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// === mv (se mantiene igual) ===
+void mv(const char *src, const char *dest) {
+    if (fs_rename(src, dest)) {
+        k_printf("Moved ", 0, GREEN_TXT);
+        k_printf(src, 0, WHITE_TXT);
+        k_printf(" to ", 0, GREEN_TXT);
+        k_printf(dest, 0, WHITE_TXT);
+    } else {
+        k_printf("Error moving file", 0, RED_TXT);
+    }
+}
+
+// === less (visualizador) ===
+void less(const char *filename) {
+    char content[MAX_CONTENT_LENGTH];
+    int bytes = fs_read(filename, content, MAX_CONTENT_LENGTH);
+    
+    for (int i = 0; i < bytes; i++) {
+        if (content[i] == '\n') cursor_y++;
+        else text_draw(cursor_x++, cursor_y, content[i], 0x0F);
+        if (cursor_x >= 80) { cursor_x = 0; cursor_y++; }
+    }
+}
+
+// === digrep (búsqueda) ===
+void digrep(const char *pattern, const char *filename) {
+    char content[MAX_CONTENT_LENGTH];
+    int bytes = fs_read(filename, content, MAX_CONTENT_LENGTH);
+    
+    int line = 1;
+    char *ptr = content;
+    char *line_start = ptr;
+    
+    while (ptr < content + bytes) {
+        // Buscar fin de línea manualmente
+        char *line_end = line_start;
+        while (*line_end && *line_end != '\n' && (line_end - content) < bytes) {
+            line_end++;
+        }
+        
+        // Verificar si el patrón está en esta línea
+        char *temp_ptr = line_start;
+        while (temp_ptr < line_end) {
+            if (strncmp(temp_ptr, pattern, strlen(pattern)) == 0) {
+                // Mostrar número de línea
+                char line_str[10];
+                itoa(line, line_str, 10);
+                k_printf("Line ", 0, CYAN_TXT);
+                k_printf(line_str, 0, WHITE_TXT);
+                k_printf(": ", 0, CYAN_TXT);
+                
+                // Mostrar contenido de la línea
+                char *print_ptr = line_start;
+                while (print_ptr < line_end) {
+                    char c = *print_ptr++;
+                    k_printf_no_newline(&c, 0, WHITE_TXT);
+                }
+                k_printf_no_newline("\n", 0, WHITE_TXT);
+                break;
+            }
+            temp_ptr++;
+        }
+        
+        // Avanzar a siguiente línea
+        if (*line_end == '\n') {
+            line++;
+            ptr = line_end + 1;
+            line_start = ptr;
+        } else {
+            ptr = line_end;
+        }
+    }
+}
+
+
+// === mc (history) ===
+void mc() {
+    for (int i = 0; i < history_count; i++) {
+        char num[10];
+        itoa(i + 1, num, 10);
+        k_printf(num, 0, ORANGE_TXT);
+        k_printf(": ", 0, WHITE_TXT);
+        k_printf(command_history[i], 0, WHITE_TXT);
+    }
+}
+
+
+
+
 
 void update_file_content(const char *filename, const char *new_content) {
     for (unsigned int i = 0; i < file_count; i++) {
@@ -871,13 +993,28 @@ void set_background_color(const char *color_name) {
     }
 }
 
-
+char* strcat(char *dest, const char *src) {
+    char *ptr = dest;
+    
+    // Find end of dest
+    while (*ptr) ptr++;
+    
+    // Copy src to end
+    while (*src) {
+        *ptr++ = *src++;
+    }
+    
+    // Null terminate
+    *ptr = '\0';
+    return dest;
+}
 
 
 
 
 
 void W_MSG();
+
 
 
 int mkdir(const char *dirname) {
@@ -947,11 +1084,42 @@ int rmdir(const char *dirname) {
 
 
 
-
+const char* strstr(const char* haystack, const char* needle) {
+    while (*haystack) {
+        const char* h = haystack;
+        const char* n = needle;
+        while (*h && *n && (*h == *n)) {
+            h++;
+            n++;
+        }
+        if (!*n) return haystack;
+        haystack++;
+    }
+    return 0;
+}
 
 // CD
 
-unsigned int current_directory = 0;  // default root
+void pwd() {
+    char path[256] = "/";  // Siempre empieza con root
+    char temp_path[256];
+    unsigned int current = current_directory;
+    int depth = 0;
+
+    // Construir path desde el directorio actual hasta root
+    while (current != 0 && depth < 10) {  // 10 = máximo de profundidad
+        strcpy(temp_path, "/");
+        strcat(temp_path, directory_table[current].name);
+        strcat(temp_path, path);
+        strcpy(path, temp_path);
+        current = directory_table[current].parent_dir;
+        depth++;
+    }
+
+    k_printf("Current path: ", 0, CYAN_TXT);
+    k_printf(path, 0, WHITE_TXT);
+}
+
 
 
 int cd_back() {
@@ -968,28 +1136,32 @@ int cd_back() {
 
     return 0;
 }
-
 int cd(const char *dirname) {
-    
-    
-    if(dirname == "..") {
-    	cd_back();
-    } else {
+    // Caso especial: cd ..
+    if (strcmp(dirname, "..") == 0) {
+        if (current_directory != 0) {  // No permitir salir del root
+            current_directory = directory_table[current_directory].parent_dir;
+            pwd();
+            return 0;
+        }
+        k_printf("Already at root", 0, RED_TXT);
+        return -1;
+    }
+
+    // Buscar solo en directorios hijos del actual
     for (unsigned int i = 0; i < directory_count; i++) {
-        if (strcmp(directory_table[i].name, dirname) == 0) {
-            current_directory = i;  // Cambia al nuevo directorio
-            k_printf("Directory changed to: ", 0, GREEN_TXT);
-            k_printf(dirname, 0, WHITE_TXT);
+        if (strcmp(directory_table[i].name, dirname) == 0 && 
+            directory_table[i].parent_dir == current_directory) {
+            current_directory = i;
+            pwd();
             return 0;
         }
     }
 
-    k_printf("Error: Directory not found.\n", 0, RED_TXT);
+    k_printf("Directory not found in current path: ", 0, RED_TXT);
+    k_printf(dirname, 0, WHITE_TXT);
     return -1;
-    }
 }
-
-
 
 
 
@@ -1145,6 +1317,10 @@ void sniff() {
 
 
 
+
+
+
+
 void init_process_table() {
     process_table[0].pid = 1;
     copy_string(process_table[0].name, "KernelTask");
@@ -1170,7 +1346,283 @@ void init_process_table() {
 
 
 
+// Wat and Where:
+// - wat: show content in file.
+// - where: show content in file, for more pro ;)
 
+
+void wat(const char *filename) {
+    char content[MAX_CONTENT_LENGTH];
+    int bytes_read = fs_read(filename, content, MAX_CONTENT_LENGTH);
+    
+    if (bytes_read > 0) {
+        k_printf(filename, 0, WHITE_TXT);
+        
+        int line = 2;
+        for (int i = 0; i < bytes_read; i++) {
+            if (content[i] == '\n') {
+                line++;
+            } else if (content[i] >= 32 && content[i] <= 126) { // Caracteres imprimibles
+                char c = content[i];
+                k_printf_no_newline(&c, line, WHITE_TXT);
+            }
+        }
+    } else {
+        k_printf("File not found or empty: ", 0, RED_TXT);
+        k_printf(filename, 0, WHITE_TXT);
+    }
+}
+
+
+
+void where(const char *filename) {
+    char content[MAX_CONTENT_LENGTH];
+    int bytes_read = fs_read(filename, content, MAX_CONTENT_LENGTH);
+    
+    if (bytes_read <= 0) {
+        k_printf("File not found or empty: ", 0, RED_TXT);
+        k_printf(filename, 0, WHITE_TXT);
+        return;
+    }
+
+    int line = 0;
+    int page = 0;
+    int max_lines = 20; // Líneas por "página"
+    
+    while (1) {
+        k_clear_screen();
+        k_printf("Content of ", 0, ORANGE_TXT);
+        k_printf(filename, 0, WHITE_TXT);
+        k_printf(" (Page ", 0, ORANGE_TXT);
+        char page_str[10];
+        itoa(page + 1, page_str, 10);
+        k_printf(page_str, 0, WHITE_TXT);
+        k_printf("):", 0, ORANGE_TXT);
+
+        // Mostrar contenido paginado
+        int current_line = 0;
+        for (int i = 0; i < bytes_read && current_line < (page + 1) * max_lines; i++) {
+            if (content[i] == '\n') {
+                current_line++;
+            }
+            if (current_line >= page * max_lines && current_line < (page + 1) * max_lines) {
+                char c = content[i];
+                if (c == '\n') {
+                    line++;
+                } else if (c >= 32 && c <= 126) {
+                    k_printf_no_newline(&c, line + 2, WHITE_TXT);
+                }
+            }
+        }
+
+        // Instrucciones
+        k_printf_xy("-- SPACE: next page | Q: quit --", 0, 24, GRAY_TXT);
+
+        // Esperar input
+        while (1) {
+            if (keyboard_has_input()) {
+                unsigned char scancode = inb(0x60);
+                if (scancode == 0x39) { // Space
+                    if ((page + 1) * max_lines < bytes_read) page++;
+                    break;
+                } else if (scancode == 0x10) { // Q
+                    return;
+                }
+            }
+        }
+        line = 0;
+    }
+}
+
+
+
+
+
+
+// REDD
+// ===== [ NETWORK DEFINITIONS ] =====
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+
+#define true 1
+#define false 0
+typedef int bool;
+
+// Estructura para paquetes de red
+typedef struct {
+    uint8_t payload[1500];
+    uint16_t length;
+} NetworkPacket;
+
+
+// Variables globales
+NetworkPacket received_packet;
+unsigned int total_packages = 0;
+
+// Estructura de paquetes (simplificada)
+typedef struct {
+    char name[50];
+    // ... (otros campos que necesites)
+} PackageEntry;
+PackageEntry package_db[100];  // Máximo 100 paquetes
+
+
+// Versión personalizada de memcpy
+void* my_memcpy(void* dest, const void* src, unsigned int n) {
+    char* d = (char*)dest;
+    const char* s = (const char*)src;
+    while (n--) *d++ = *s++;
+    return dest;
+}
+
+// Versión personalizada de strstr
+const char* my_strstr(const char* haystack, const char* needle) {
+    if (!*needle) return haystack;
+    while (*haystack) {
+        if (*haystack == *needle) {
+            const char* h = haystack;
+            const char* n = needle;
+            while (*h && *n && (*h == *n)) {
+                h++;
+                n++;
+            }
+            if (!*n) return haystack;
+        }
+        haystack++;
+    }
+    return 0;
+}
+
+#define NIC_PORT 0xCF8  // Puerto PCI para la NIC (ej: RTL8139)
+
+// Función personalizada memcpy
+void* memcpy(void* dest, const void* src, unsigned int n) {
+    char* d = (char*)dest;
+    const char* s = (const char*)src;
+    for (unsigned int i = 0; i < n; i++) {
+        d[i] = s[i];
+    }
+    return dest;
+}
+
+// Función personalizada strstr
+
+
+// Función para verificar paquetes (simulada)
+bool packet_received() {
+    // En una implementación real, verificaría el hardware
+    static int counter = 0;
+    return (counter++ > 3);  // Simula recepción después de 3 intentos
+}
+
+// Función para enviar paquetes (simulada)
+void send_packet(uint8_t* data, uint16_t len) {
+    memcpy(received_packet.payload, data, len);
+    received_packet.length = len;
+    k_printf("Packet send!", 0, GREEN_TXT);
+}
+
+// Verificador de paquetes instalados
+bool is_pkg_installed(const char* pkg_name) {
+    for (unsigned int i = 0; i < total_packages; i++) {
+        if (my_strstr(package_db[i].name, pkg_name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void beardog_install(const char* pkg_name) {
+    if (is_pkg_installed(pkg_name)) {
+        k_printf("Package already installed: ", 0, YELLOW_TXT);
+        k_printf(pkg_name, 0, WHITE_TXT);
+        return;
+    }
+    
+    k_printf("Installing: ", 0, GREEN_TXT);
+    k_printf(pkg_name, 0, WHITE_TXT);
+    
+    // Añadir a la base de datos local
+    unsigned int name_len = 0;
+    while (pkg_name[name_len] && name_len < 49) {
+        package_db[total_packages].name[name_len] = pkg_name[name_len];
+        name_len++;
+    }
+    package_db[total_packages].name[name_len] = '\0';
+    total_packages++;
+}
+
+void nic_init() {
+    // 1. Detectar hardware
+    outl(NIC_PORT, 0x80000000);  // Buscar dispositivos PCI
+    uint32_t nic_info = inl(NIC_PORT + 0x10);
+    
+    // 2. Configurar NIC (ejemplo para RTL8139)
+    outb(NIC_PORT + 0x69, 0x01);  // Encender NIC
+    k_printf("NIC Initialized", 0, GREEN_TXT);
+}
+
+void http_get(const char* host, const char* path, char* output) {
+    char request[256];
+    char* ptr = request;
+    
+    // Construir request manualmente
+    const char* parts[] = {"GET ", path, " HTTP/1.1\0Host: ", host, "\0"};
+    for (int i = 0; i < 5; i++) {
+        const char* p = parts[i];
+        while (*p) *ptr++ = *p++;
+    }
+    
+    send_packet((uint8_t*)request, ptr - request);
+    
+    while (!packet_received()) {
+        // Esperar activamente (en realidad usarías IRQs)
+        asm volatile("pause");
+    }
+    
+    my_memcpy(output, received_packet.payload, 
+             received_packet.length < 1500 ? received_packet.length : 1500);
+}
+
+
+
+
+
+
+//===========================================
+//          bearpkg                         |
+//===========================================
+
+
+
+#define MAX_PACKAGES 500
+
+typedef struct {
+    char name[50];
+    char version[20];
+    char description[100];
+    char dependencies[5][50];  // Max 5 deps por paquete
+    int is_installed;
+} BearPackage;
+
+
+
+
+void beardog_update() {
+    char response[4096];
+    http_get("repo.bearos.org", "/packages.json", response);
+    
+    // Procesar JSON manualmente (ejemplo básico)
+    if (strstr(response, "\"name\":\"nginx\"")) {
+        k_printf("Nginx available!", 0, GREEN_TXT);
+    }
+}
+
+
+
+
+//====================================
 
 
 
@@ -1387,7 +1839,7 @@ void repair_memory(unsigned int addr);
 
 
 #define MAX_HISTORY 1000
-char command_history[MAX_HISTORY][128];  
+  
 unsigned int history_index = 1;
 
 
@@ -1446,33 +1898,29 @@ void show_command_history() {
 
 
 
-
 void lsk_itm() {
-    int cursor_y = 3;
     k_clear_screen();
+    k_printf("Contents of: ", 0, ORANGE_TXT);
+    pwd();
+    k_printf("----------------------------------", 1, ORANGE_TXT);
 
-    k_printf("------------------------------------------", 0, ORANGE_TXT);
-    k_printf("name:                                 ", 1, ORANGE_TXT);
-    k_printf("------------------------------------------", 2, ORANGE_TXT);
-    if (directory_count > 0 | file_count > 0) {
-        for (unsigned int i = 0; i < directory_count; i++) {
-            k_printf_xy("./", 0, cursor_y, BLUE_TXT);
-            k_printf_xy("[DIR]", 19, cursor_y, GRAY_TXT);
-            k_printf_xy(directory_table[i].name, 2, cursor_y++, BLUE_TXT);
-
+    int y_pos = 3;
+    // Mostrar subdirectorios
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (directory_table[i].parent_dir == current_directory) {
+            k_printf_xy("./", 0, y_pos, BLUE_TXT);
+            k_printf_xy(directory_table[i].name, 2, y_pos, BLUE_TXT);
+            k_printf_xy("[DIR]", 30, y_pos++, GRAY_TXT);
         }
-
-        for (unsigned int i = 0; i < file_count; i++) {
-           k_printf_xy("[FILES]", 19, cursor_y, GRAY_TXT);
-
-           k_printf_xy(file_table[i].name, 2, cursor_y++, ORANGE_TXT);
-
-        }
-    } else {
-
-
     }
 
+    // Mostrar archivos
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (file_table[i].start_block / 16 == current_directory) {
+            k_printf_xy(file_table[i].name, 2, y_pos, WHITE_TXT);
+            k_printf_xy("[FILE]", 30, y_pos++, GRAY_TXT);
+        }
+    }
 }
 
 
@@ -1620,21 +2068,339 @@ int atoi(const char *str) {
 
 
 // ===== [ strcat IMPLEMENTATION ] =====
-char* strcat(char *dest, const char *src) {
-    char *ptr = dest;
+
+
+
+
+// QBEAR - Text Editor simple for the kernel.
+
+#define QB_MAX_LINES 100
+#define QB_LINE_LEN 256
+
+typedef struct {
+    char lines[QB_MAX_LINES][QB_LINE_LEN];
+    int line_count;
+    int cursor_x, cursor_y;
+    char filename[128];
+    int modified;
+} QBEditor;
+
+QBEditor qb_editor;
+
+void qb_init_editor(const char *filename) {
+    // Limpiar el editor
+    for (int i = 0; i < QB_MAX_LINES; i++) {
+        qb_editor.lines[i][0] = '\0';
+    }
+    qb_editor.line_count = 1;
+    qb_editor.cursor_x = 0;
+    qb_editor.cursor_y = 0;
+    strcpy(qb_editor.filename, filename);
+    qb_editor.modified = 0;
+
+    // Intentar cargar el archivo si existe
+    char file_content[MAX_CONTENT_LENGTH];
+    if (fs_read(filename, file_content, MAX_CONTENT_LENGTH) > 0) {
+        int line = 0;
+        int pos = 0;
+        for (int i = 0; file_content[i] && line < QB_MAX_LINES; i++) {
+            if (file_content[i] == '\n') {
+                qb_editor.lines[line][pos] = '\0';
+                line++;
+                pos = 0;
+            } else if (pos < QB_LINE_LEN - 1) {
+                qb_editor.lines[line][pos++] = file_content[i];
+            }
+        }
+        qb_editor.line_count = line + 1;
+    }
+}
+
+void qb_draw_status_bar() {
+    char status[80];
+    const char *modified_str = qb_editor.modified ? "Modified" : "Saved";
     
-    // Find end of dest
-    while (*ptr) ptr++;
+    // Construir el string manualmente
+    int pos = 0;
     
-    // Copy src to end
-    while (*src) {
-        *ptr++ = *src++;
+    // "QBear | "
+    const char *prefix = "QBear | ";
+    while (*prefix && pos < sizeof(status) - 1) {
+        status[pos++] = *prefix++;
     }
     
-    // Null terminate
-    *ptr = '\0';
-    return dest;
+    // Nombre del archivo
+    const char *filename = qb_editor.filename;
+    while (*filename && pos < sizeof(status) - 1) {
+        status[pos++] = *filename++;
+    }
+    
+    // " | "
+    const char *separator = " | ";
+    while (*separator && pos < sizeof(status) - 1) {
+        status[pos++] = *separator++;
+    }
+    
+    // Estado (Modified/Saved)
+    while (*modified_str && pos < sizeof(status) - 1) {
+        status[pos++] = *modified_str++;
+    }
+    
+    // Terminar el string
+    status[pos] = '\0';
+    
+    // Rellenar el resto con espacios si es necesario
+    while (pos < sizeof(status) - 1) {
+        status[pos++] = ' ';
+    }
+    status[sizeof(status) - 1] = '\0';
+    
+    // Dibujar barra de estado
+    for (int i = 0; i < 80; i++) {
+        unsigned char attr = (i < pos) ? 0x70 : 0x07;
+        text_draw(i, 24, status[i], attr);
+    }
 }
+
+void qb_force_redraw() {
+    // Limpiar área de texto (sin afectar la barra de estado)
+    for (int y = 0; y < 23; y++) {
+        for (int x = 0; x < 80; x++) {
+            text_draw(x, y, ' ', 0x07);
+        }
+    }
+    
+    // Redibujar todo el contenido
+    for (int y = 0; y < 23 && y < qb_editor.line_count; y++) {
+        for (int x = 0; x < QB_LINE_LEN && qb_editor.lines[y][x]; x++) {
+            text_draw(x, y, qb_editor.lines[y][x], 0x07);
+        }
+    }
+}
+
+void qb_draw_content() {
+    // Solo limpia la pantalla la primera vez
+    static int first_time = 1;
+    if (first_time) {
+        k_clear_screen();
+        first_time = 0;
+    }
+    
+    // Mostrar contenido (solo líneas visibles)
+    for (int i = 0; i < 23 && i < qb_editor.line_count; i++) {
+        // Solo redibujar líneas modificadas
+        if (qb_editor.lines[i][0] != 0) {
+            for (int j = 0; j < QB_LINE_LEN && qb_editor.lines[i][j]; j++) {
+                text_draw(j, i, qb_editor.lines[i][j], 0x07);
+            }
+            // Limpiar el resto de la línea
+            for (int j = strlen(qb_editor.lines[i]); j < 80; j++) {
+                text_draw(j, i, ' ', 0x07);
+            }
+        }
+    }
+    
+    // Mostrar cursor (borrar posición anterior primero)
+    static int prev_cursor_x = 0, prev_cursor_y = 0;
+    if (prev_cursor_y < 23 && prev_cursor_x < 80) {
+        char prev_char = qb_editor.lines[prev_cursor_y][prev_cursor_x];
+        text_draw(prev_cursor_x, prev_cursor_y, prev_char, 0x07);
+    }
+    
+    // Dibujar cursor nuevo
+    if (qb_editor.cursor_y < 23 && qb_editor.cursor_x < 80) {
+        unsigned short cursor_pos = qb_editor.cursor_y * SCREEN_WIDTH + qb_editor.cursor_x;
+        VIDEO_MEMORY[cursor_pos] = (VIDEO_MEMORY[cursor_pos] & 0xFF00) | 0x5F;
+    }
+    
+    prev_cursor_x = qb_editor.cursor_x;
+    prev_cursor_y = qb_editor.cursor_y;
+    
+    qb_draw_status_bar();
+}
+void qb_save_file() {
+    char content[MAX_CONTENT_LENGTH] = {0};
+    int pos = 0;
+    
+    for (int i = 0; i < qb_editor.line_count && pos < MAX_CONTENT_LENGTH - 2; i++) {
+        for (int j = 0; qb_editor.lines[i][j] && pos < MAX_CONTENT_LENGTH - 2; j++) {
+            content[pos++] = qb_editor.lines[i][j];
+        }
+        if (i < qb_editor.line_count - 1 && pos < MAX_CONTENT_LENGTH - 2) {
+            content[pos++] = '\n';
+        }
+    }
+    
+    fs_write(qb_editor.filename, content, pos);
+    qb_editor.modified = 0;
+}
+
+void qb_handle_input() {
+    unsigned char scancode = inb(0x60);
+    
+    if (scancode == 0x01) { // ESC - Salir
+        if (qb_editor.modified) {
+            // Preguntar si guardar antes de salir
+            qb_draw_status_bar();
+            k_printf_xy("Save changes? (Y/N/C)", 10, 15, 0x4F);
+            qb_draw_content();
+            
+            while (1) {
+                scancode = inb(0x60);
+                if (scancode == 0x15) { // Y - Guardar y salir
+                    qb_save_file();
+                    return;
+                } else if (scancode == 0x31) { // N - Salir sin guardar
+                    return;
+                } else if (scancode == 0x2E) { // C - Cancelar
+                    break;
+                }
+            }
+        } else {
+            return;
+        }
+    }
+    
+else if (scancode == 0x1C) { // Enter
+    if (qb_editor.line_count < QB_MAX_LINES - 1) {
+        // Detectar si estamos al final de la línea (columna 0 o después del último carácter)
+        int at_end_of_line = (qb_editor.cursor_x == 0) || 
+                            (qb_editor.cursor_x == strlen(qb_editor.lines[qb_editor.cursor_y]));
+        
+        // Mover líneas hacia abajo
+        for (int i = qb_editor.line_count; i > qb_editor.cursor_y + 1; i--) {
+            strcpy(qb_editor.lines[i], qb_editor.lines[i-1]);
+        }
+
+        if (at_end_of_line) {
+            // Caso 1: Enter al final -> línea nueva vacía
+            qb_editor.lines[qb_editor.cursor_y + 1][0] = '\0';
+        } else {
+            // Caso 2: Enter en medio -> dividir la línea
+            strcpy(qb_editor.lines[qb_editor.cursor_y + 1], 
+                  &qb_editor.lines[qb_editor.cursor_y][qb_editor.cursor_x]);
+            qb_editor.lines[qb_editor.cursor_y][qb_editor.cursor_x] = '\0';
+        }
+
+        // Actualizar posición
+        qb_editor.cursor_y++;
+        qb_editor.cursor_x = 0;
+        qb_editor.line_count++;
+        qb_editor.modified = 1;
+        
+        // Redibujar
+        qb_force_redraw();
+    }
+}
+    else if (scancode == 0x0E) { // Backspace
+        if (qb_editor.cursor_x > 0) {
+            // Eliminar carácter
+            for (int i = qb_editor.cursor_x - 1; i < QB_LINE_LEN - 1; i++) {
+                qb_editor.lines[qb_editor.cursor_y][i] = qb_editor.lines[qb_editor.cursor_y][i+1];
+            }
+            qb_editor.cursor_x--;
+            qb_editor.modified = 1;
+        } else if (qb_editor.cursor_y > 0) {
+            // Unir con línea anterior
+            int prev_len = strlen(qb_editor.lines[qb_editor.cursor_y - 1]);
+            int curr_len = strlen(qb_editor.lines[qb_editor.cursor_y]);
+            
+            if (prev_len + curr_len < QB_LINE_LEN - 1) {
+                strcat(qb_editor.lines[qb_editor.cursor_y - 1], qb_editor.lines[qb_editor.cursor_y]);
+                
+                // Mover líneas hacia arriba
+                for (int i = qb_editor.cursor_y; i < qb_editor.line_count - 1; i++) {
+                    strcpy(qb_editor.lines[i], qb_editor.lines[i+1]);
+                }
+                qb_editor.line_count--;
+                qb_editor.cursor_y--;
+                qb_editor.cursor_x = prev_len;
+                qb_editor.modified = 1;
+            }
+        }
+    }
+    else if (scancode == 0x1C) { // Ctrl+S - Guardar
+        qb_save_file();
+        k_printf_xy("File saved!", 10, 35, 0x2F);
+        delay(500);
+    }
+    else if (scancode < sizeof(scancode_to_ascii) && scancode_to_ascii[scancode] >= 32) {
+        // Insertar carácter
+        if (qb_editor.cursor_x < QB_LINE_LEN - 1) {
+            // Hacer espacio si es necesario
+            for (int i = QB_LINE_LEN - 1; i > qb_editor.cursor_x; i--) {
+                qb_editor.lines[qb_editor.cursor_y][i] = qb_editor.lines[qb_editor.cursor_y][i-1];
+            }
+            qb_editor.lines[qb_editor.cursor_y][qb_editor.cursor_x] = scancode_to_ascii[scancode];
+            qb_editor.cursor_x++;
+            qb_editor.modified = 1;
+        }
+    }
+    // Manejo de flechas
+    else if (scancode == 0x48) { // Flecha arriba
+        if (qb_editor.cursor_y > 0) qb_editor.cursor_y--;
+    }
+    else if (scancode == 0x50) { // Flecha abajo
+        if (qb_editor.cursor_y < qb_editor.line_count - 1) qb_editor.cursor_y++;
+    }
+    else if (scancode == 0x4B) { // Flecha izquierda
+        if (qb_editor.cursor_x > 0) qb_editor.cursor_x--;
+    }
+    else if (scancode == 0x4D) { // Flecha derecha
+        if (qb_editor.cursor_x < strlen(qb_editor.lines[qb_editor.cursor_y])) qb_editor.cursor_x++;
+    }
+}
+
+void qbear(const char *filename) {
+    qb_init_editor(filename);
+    int last_key = 0;
+    
+    while (1) {
+        if (keyboard_has_input()) {
+            unsigned char scancode = inb(0x60);
+            if (scancode != last_key) {  // Evitar repetición de teclas
+                last_key = scancode;
+                qb_handle_input();
+                
+                // Redibujar solo si hubo cambios
+                qb_draw_content();
+                
+                // Salir si handle_input lo indica
+                if (scancode == 0x01) break; // ESC
+            }
+        } else {
+            last_key = 0;
+            // Pequeña pausa para reducir el consumo de CPU
+            for (int i = 0; i < 10000; i++) asm volatile("nop");
+        }
+    }
+    
+    // Restaurar pantalla
+    k_clear_screen();
+    W_MSG();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ===== [ USER MANAGEMENT STRUCTURES ] =====
@@ -1797,6 +2563,7 @@ void bearinstall_create_user(void) {
     current_state = STATE_USER_CONFIG;
 }
 
+
 void bearinstall_config_screen(void) {
     // Variables para la configuración
     int selected_option = 0;
@@ -1859,15 +2626,19 @@ void bearinstall_config_screen(void) {
                     if (selected_option > 0) selected_option--;
                 } else if (scancode == 0x50) { // Flecha abajo
                     if (selected_option < total_options - 1) selected_option++;
-                } else if (scancode == 0x1C) { // Enter
-                    switch (selected_option) {
-                        case 0: is_admin = !is_admin; break;
-                        case 1: tz_index = (tz_index + 1) % tz_count; break;
-                        case 2: enable_network = !enable_network; break;
-                        case 3: install_drivers = !install_drivers; break;
-                    }
                 }
-            }
+
+// ENTER
+
+
+// ==
+
+
+
+
+    }
+
+
         }
         
         // Pequeña pausa para reducir parpadeo
@@ -2373,6 +3144,36 @@ void process_input_logged() {
     input_index = 0;
 
 }
+void parse_http_cmd(const char* input, char* host, char* path) {
+    // Saltar "http_get "
+    while (*input && *input != ' ') input++;
+    while (*input == ' ') input++;  // Saltar espacios extra
+
+    // Extraer host (hasta primer espacio)
+    while (*input && *input != ' ' && *input != '\n') {
+        *host++ = *input++;
+    }
+    *host = '\0';
+
+    // Saltar espacios
+    while (*input == ' ') input++;
+
+    // Extraer path (hasta fin de línea)
+    while (*input && *input != '\n') {
+        *path++ = *input++;
+    }
+    *path = '\0';
+}
+
+void parse_two_args(const char *input, char *arg1, char *arg2) {
+    while (*input == ' ') input++;
+    while (*input && *input != ' ') *arg1++ = *input++;
+    *arg1 = '\0';
+    while (*input == ' ') input++;
+    while (*input && *input != '\n') *arg2++ = *input++;
+    *arg2 = '\0';
+}
+
 
 
 void process_input() {
@@ -2392,11 +3193,61 @@ void process_input() {
     else if (strcmp(input_buffer, "usrcreate") == 0) {
         usrcreate();
     }
+    else if (strncmp(input_buffer, "beardog install ", 16) == 0) {
+        beardog_install(input_buffer + 16);
+    }
+    else if (strncmp(input_buffer, "mv ", 3) == 0) {
+        char src[50], dest[50];
+        parse_two_args(input_buffer + 3, src, dest);
+        mv(src, dest);
+    }
+    else if (strncmp(input_buffer, "digrep ", 7) == 0) {
+        char pattern[50], file[50];
+        parse_two_args(input_buffer + 7, pattern, file);
+        digrep(pattern, file);
+    }
+   
+    else if (strcmp(input_buffer, "mc") == 2) {
+        mc();
+    }
+    else if (strncmp(input_buffer, "http-get ", 9) == 0) {
+        char host[50] = {0};
+        char path[50] = {0};
+        k_clear_screen();
+        
+        // Parsear manualmente
+        parse_http_cmd(input_buffer, host, path);
+        
+        // Validación básica
+        if (!host[0] || !path[0]) {
+            k_printf("Usage: http_get host path", 0, RED_TXT);
+            return;
+        }
+
+        char response[1500];
+        http_get(host, path, response);
+        k_printf(response, 0, WHITE_TXT);
+    }
+
+    else if (strncmp(input_buffer, "wat ", 4) == 0) {
+        const char *filename = input_buffer + 4;
+        wat(filename);
+    }
+    else if (strncmp(input_buffer, "where ", 6) == 0) {
+        const char *filename = input_buffer + 6;
+        where(filename);
+    }
+
     else if (strncmp(input_buffer, "usrremove ", 10) == 0) {
         const char *username = input_buffer + 10;
         usrremove(username);
     }
     
+    else if (strncmp(input_buffer, "qbear ", 6) == 0) {
+        k_clear_screen();
+        const char *filename = input_buffer + 6;
+        qbear(filename);
+}
 
     else if (strcmp(input_buffer, "cdback") == 0) {
         cd_back();
@@ -3024,11 +3875,11 @@ void beep() {
 
 
 
+void headerfiles_principal() {
 
-
-
-
-
+    touch("global.bearcfg", "NORMAL");
+    touch("GUIDE.md", "Hello!");
+}
 
 
 
@@ -3045,29 +3896,15 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     if (directory_count == 0 || strcmp(directory_table[0].name, "/etc") != 0) {
         mkdir("/etc");
     }
-    
-    while (1) {
-        switch (current_state) {
-            case STATE_SHELL:
-                if (keyboard_has_input()) {
-                    keyboard_handler();
-                }
-                break;
-                
-            case STATE_BEARINSTALL:
-                bearinstall_create_user();
-                break;
-                
-            case STATE_USER_CONFIG:
-                bearinstall_config_screen();
-                break;
-        }
-    }
 
-    current_state = STATE_SHELL;
-    CR_W();
-    delay(100);
+    k_clear_screen();
+    //CR_W();
+    //delay(100);
     W_MSG();
+    
+    current_state = STATE_SHELL;
+    
+
     vfs_init();
     
 
@@ -3139,16 +3976,8 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 
 
     while (1) {
-   
-        if(logged == 1) {
-         keyboard_handler();
 
-        } else if(logged == 0)  {
-         keyboard_handler_logged();
-
-    }
-    
-    switch (current_state) {
+        switch (current_state) {
             case STATE_SHELL:
                 if (keyboard_has_input()) {
                     keyboard_handler();
@@ -3163,6 +3992,15 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
                 bearinstall_config_screen();
                 break;
         }
+   
+        if(logged == 1) {
+         keyboard_handler();
+
+        } else if(logged == 0)  {
+         keyboard_handler_logged();
+
+    }
+
 
 
 

@@ -65,7 +65,7 @@ run-iso: iso
 	qemu-system-i386 -cdrom $(ISO_NAME)
 
 run:
-	qemu-system-i386 -kernel ./kernel -vga std
+	qemu-system-i386  -net nic,model=rtl8139 -net user,hostfwd=tcp::8000-:80 -kernel ./kernel -vga std 
 
 clean:
 	rm -rf iso

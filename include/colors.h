@@ -20,6 +20,7 @@
 #define PINK_TXT 0x05
 #define GREEN_TXT 0x02
 #define DARKBLUE_TXT 0x01
+#define YELLOW_TXT 0x0E
 
 #define RED_TXT_BG 0x44
 #define AQUA_TXT_BG 0x33
