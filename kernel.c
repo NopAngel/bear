@@ -83,7 +83,7 @@ void k_clear_screen();
 #include "include/drivers/ps2/drv.h"
 #include "./rtc.h"
 #include "fs/k_printf_xy.h"
-
+#include "include/delay/delay.h"
 
 
 
@@ -265,17 +265,6 @@ void bear_panic(const char *msg) {
 
 
 
-
-
-
-
-
-
-void delay(int time) {
-	volatile long count = 1000000 * time;
-	while(count--); 
-}
-
 void CR_W() {
 	k_clear_screen();
 	k_printf("[BEAR] Bear packs loading",0, GREEN_TXT);
@@ -365,7 +354,7 @@ void CR_W() {
 
 	k_printf("-----------------------------------",25, WHITE_TXT);
     k_clear_screen();
-	delay(200);
+	delay(10);
 	k_clear_screen();
     k_printf_center("BearOS starting - Author: NopAngel", 12, ORANGE_TXT);
 }
@@ -1116,7 +1105,6 @@ void pwd() {
         depth++;
     }
 
-    k_printf("Current path: ", 0, CYAN_TXT);
     k_printf(path, 0, WHITE_TXT);
 }
 
@@ -1216,9 +1204,9 @@ void get_time() {
     seconds_str[2] = '\0';
 
     char minutes_str[3]; 
-minutes_str[0] = (minutes / 10) + '0'; 
-minutes_str[1] = (minutes % 10) + '0'; 
-minutes_str[2] = '\0';
+    minutes_str[0] = (minutes / 10) + '0'; 
+    minutes_str[1] = (minutes % 10) + '0'; 
+    minutes_str[2] = '\0';
 
     k_clear_screen();
     k_printf(time_str, GREEN_TXT, 0);
@@ -1900,12 +1888,11 @@ void show_command_history() {
 
 void lsk_itm() {
     k_clear_screen();
-    k_printf("Contents of: ", 0, ORANGE_TXT);
-    pwd();
-    k_printf("----------------------------------", 1, ORANGE_TXT);
+    cursor_y = 0;
+    k_printf("----------------------------------", cursor_y++, ORANGE_TXT);
 
     int y_pos = 3;
-    // Mostrar subdirectorios
+    
     for (unsigned int i = 0; i < directory_count; i++) {
         if (directory_table[i].parent_dir == current_directory) {
             k_printf_xy("./", 0, y_pos, BLUE_TXT);
@@ -1914,13 +1901,17 @@ void lsk_itm() {
         }
     }
 
-    // Mostrar archivos
-    for (unsigned int i = 0; i < file_count; i++) {
-        if (file_table[i].start_block / 16 == current_directory) {
-            k_printf_xy(file_table[i].name, 2, y_pos, WHITE_TXT);
+
+    if (file_count > 0) {
+        for (unsigned int i = 0; i < file_count; i++) {
+            k_printf_xy(file_table[i].name, 2, y_pos, GRAY_TXT);
             k_printf_xy("[FILE]", 30, y_pos++, GRAY_TXT);
+
         }
     }
+
+    k_printf("----------------------------------", y_pos++, ORANGE_TXT);
+    cursor_y+=y_pos;
 }
 
 
@@ -2507,6 +2498,9 @@ void save_user_to_disk(UserEntry *user) {
     
     // Guardar en /etc/passwd
     fs_write("/etc/passwd", entry, pos);
+    mkdir("cfg");
+    fs_write("/cfg/global.bearcfg", "GLOBAL_end=DEFAULT", 10);
+    mkdir("home");
 }
 
 void finalize_user_creation(void) {
@@ -3264,8 +3258,8 @@ void process_input() {
     }
    
    
-   if (strcmp(input_buffer, "uptime") == 0) {
-   	cursor_y++;
+   else if (strcmp(input_buffer, "uptime") == 0) {
+   	    cursor_y++;
         cmd_uptime(cursor_y); 
         
     } 
@@ -3281,9 +3275,9 @@ void process_input() {
 
     else if(strcmp(input_buffer, "track") == 0) {
         k_clear_screen();
-            track_event("Kernel init", 1);
-    track_event("Load modules", 2);
-    track();
+        track_event("Kernel init", 1);
+        track_event("Load modules", 2);
+        track();
     } else if (strcmp(input_buffer, "hibernate -light") == 0) {
         hibernateLight(); // Congalate pc data
     } else if (strcmp(input_buffer, "hibernate -cozy") == 0) {
@@ -3875,13 +3869,11 @@ void beep() {
 
 
 
-void headerfiles_principal() {
-
+void headerfiles_main() {
+    mkdir("qpb");
     touch("global.bearcfg", "NORMAL");
     touch("GUIDE.md", "Hello!");
 }
-
-
 
 
 
@@ -3892,14 +3884,15 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     user_count = 0;
     current_state = STATE_SHELL;
     
-    // Crear directorio /etc si no existe
+    // create "/etc" without exist
     if (directory_count == 0 || strcmp(directory_table[0].name, "/etc") != 0) {
         mkdir("/etc");
     }
 
+    headerfiles_main();
     k_clear_screen();
-    //CR_W();
-    //delay(100);
+    CR_W();
+    delay(80);
     W_MSG();
     
     current_state = STATE_SHELL;

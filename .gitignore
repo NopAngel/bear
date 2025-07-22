@@ -12,7 +12,8 @@
 #build
 *.o
 *.iso
-kernel
+.img
+kernel.elf
 kc.o
 kasm.o
 kernel
