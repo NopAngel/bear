@@ -38,7 +38,7 @@ GPP_FLAGS_EXCEP=-m32 -fno-stack-protector -g -fomit-frame-pointer -fno-exception
 GPP_FLAGS_RTTI=-m32 -fno-stack-protector -fno-exceptions -fno-rtti -c
 
 
-GRUB_FODLER=/iso/boot/grub
+GRUB_FODLER=./iso/boot/grub
 
 
 
@@ -70,7 +70,7 @@ compile:
 	ld $(LDFLAG) $(LDPATH)
 iso: compile
 	mkdir -p $(GRUB_FODLER)
-	cp $(KERNEL_BIN) iso/boot/
+	cp $(KERNEL_BIN) ./iso/boot/
 	grub-mkrescue -o $(ISO_NAME) iso
 
 run-iso: iso
@@ -177,7 +177,6 @@ ifndef GIT
 endif
 
 PACKAGE=apt
-SUDO=sudo
 
 ifndef PACKAGE
 
@@ -212,18 +211,10 @@ endif
 
 endif
 
-ifndef SUDO
-
-
-SUDO=chocolatey 
-ifndef SUDO
-SUDO=winget
-endif
-
-endif
 
 prepared:
 	sudo $(PACKAGE) install aptitude && sudo aptitude install binutils make git
 	$(GIT) (REPO) && cd bear
 	
-	
+
+
