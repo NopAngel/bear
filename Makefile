@@ -1,18 +1,12 @@
-
-
+#
+#
 #											_ [ B E A R      |      O S ] _
 #
 #
-# 													-compile: compile files
-# 													-iso: compile with grub (for .iso)
-# 													-run-iso: run iso
-# 													-clean: delete ass files
+#  Made by: NopAngel
+#  LICESE: APACHE 2.0
 #
-# _ Made by: NopAngel, LICESE: APACHE 2.0
-
-
-
-
+#
 
 
 
@@ -213,7 +207,7 @@ endif
 
 
 prepared:
-	sudo $(PACKAGE) install aptitude && sudo aptitude install binutils make git
+	sudo $(PACKAGE) install aptitude && sudo aptitude install binutils make git nasm
 	$(GIT) (REPO) && cd bear
 	
 

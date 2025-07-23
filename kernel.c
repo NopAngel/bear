@@ -14,14 +14,13 @@
 //this OS can be improved 1,000%, but I don't really care that much. The code is going to stay like this for a while, 
 // because it does its job, it'll be fast, it'll work well, and nothing else. I just wanted to put this out there.
 
-#define CYAN_TXT 3  // Asegurar que existe la constante
+#define CYAN_TXT 3  
 
 
-// --- FS MOCK --- funciones implementadas en kernel.c directamente
 
 int memfs_open(const char *path, int flags) {
     if (path[0] == '/' && path[1] == 'm' && path[2] == 'n')
-        return 0; // solo acepta un archivo
+        return 0; 
     return -1;
 }
 
@@ -40,7 +39,7 @@ int memfs_read(int fd, void *buf, unsigned int count) {
 }
 
 int memfs_write(int fd, const void *buf, unsigned int count) {
-    return count; // descartamos, pero simulamos éxito
+    return count; 
 }
 
 
@@ -119,7 +118,7 @@ void text_draw(int x, int y, char c, unsigned char color) {
 }
 
 
-
+#define NULL ((void*)0)  
 
 /*
 void *allocate_shared_memory(unsigned int size);
@@ -127,42 +126,6 @@ void free_shared_memory(void *address);
 void init_shared_memory();
 */
 
-
-
-
-/*
-void kernel_main() {
-    // Inicializar la memoria compartida
-    init_shared_memory();
-
-    // Proceso 1: Reservar un bloque de memoria compartida
-    void *block1 = allocate_shared_memory(512);
-    if (block1) {
-        k_printf("Proceso 1 reservó memoria en: 0x%x\n", (unsigned int)block1);
-    }
-
-    // Proceso 2: Reservar otro bloque
-    void *block2 = allocate_shared_memory(512);
-    if (block2) {
-        k_printf("Proceso 2 reservó memoria en: 0x%x\n", (unsigned int)block2);
-    }
-
-    // Proceso 1: Liberar el bloque
-    free_shared_memory(block1);
-    k_printf("Proceso 1 liberó su bloque\n");
-
-    // Reasignación
-    void *block3 = allocate_shared_memory(512);
-    if (block3) {
-        k_printf("Bloque reasignado a otro proceso: 0x%x\n", (unsigned int)block3);
-    }
-
-    while (1); // Mantener el kernel activo
-}
-
-CANT USE:
-
-*/
 
 
 
@@ -251,7 +214,7 @@ void bear_panic(const char *msg) {
         if (i % 60 == 59) y++;
     }
 
-    // Loop infinito
+    
     while (1) {
         __asm__ volatile ("hlt");
     }
@@ -369,7 +332,7 @@ int uptime_seconds = 0;
 void timer_tick() {
     static int ticks = 0;
     ticks++;
-    if (ticks >= 100) {   // supón 100 ticks = 1 segundo
+    if (ticks >= 100) {  
         ticks = 0;
         uptime_seconds++;
     }
@@ -394,9 +357,10 @@ void cmd_uptime() {
     msg[i] = '\0';
 
     for (int j = 0; msg[j]; j++){
-        text_draw(j, 20, msg[j], 0x0B); // línea 20, color cian
+        text_draw(j, 20, msg[j], 0x0B); 
 }
 }
+
 
 
 
@@ -471,7 +435,7 @@ int custom_strcmp(const char *str1, const char *str2) {
     return *(unsigned char *)str1 - *(unsigned char *)str2;
 }
 
-// Versión BearOS de strchr
+
 char* find_char(char* str, char c) {
     while (*str) {
         if (*str == c) return str;
@@ -479,6 +443,8 @@ char* find_char(char* str, char c) {
     }
     return 0;
 }
+
+
 
 
 char *custom_strcpy(char *dest, const char *src) {
@@ -536,7 +502,7 @@ unsigned int custom_strlen(const char *str) {
 
 void clear_memory(char *buffer, unsigned int length) {
     for (unsigned int i = 0; i < length; i++) {
-        buffer[i] = 0;  // **Inicializar manualmente**
+        buffer[i] = 0;  
     }
 }
 
@@ -547,21 +513,21 @@ void clear_memory(char *buffer, unsigned int length) {
 
 
 
-#define MAX_LOG_ENTRIES 50  // 🔥 Número máximo de logs en memoria
+#define MAX_LOG_ENTRIES 50  
 
-typedef enum { INFO, WARNING, ERROR } LogLevel;  // 🔥 Niveles de prioridad
+typedef enum { INFO, WARNING, ERROR } LogLevel;  
 
 typedef struct {
     char message[128];  
     unsigned int timestamp;  
-    LogLevel level;  // **Nuevo campo de prioridad**
+    LogLevel level;  
 } LogEntry;
 
 
 
 
 LogEntry log_buffer[MAX_LOG_ENTRIES];
-unsigned int log_index = 0;  // Posición actual en el buffer
+unsigned int log_index = 0;  
 
 
 
@@ -570,7 +536,8 @@ void add_log(const char *message, unsigned int timestamp, LogLevel level) {
     log_buffer[log_index].level = level;
     custom_strcpy(log_buffer[log_index].message, message);
 
-    log_index = (log_index + 1) % MAX_LOG_ENTRIES;  // 🔄 Circular
+    log_index = (log_index + 1) % MAX_LOG_ENTRIES;  
+    fs_read(*message, message, 10);
 }
 
 
@@ -583,7 +550,7 @@ void show_logs(LogLevel filter_level) {
     for (unsigned int i = 0; i < MAX_LOG_ENTRIES; i++) {
         if (log_buffer[i].message[0] != '\0' && log_buffer[i].level >= filter_level) {  
             
-            // 📌 Mostrar tipo de log con colores
+            
             const char *level_text = (log_buffer[i].level == INFO) ? "[INFO] " :
                                      (log_buffer[i].level == WARNING) ? "[WARNING] " : "[ERROR] ";
             int color = (log_buffer[i].level == INFO) ? GREEN_TXT :
@@ -605,13 +572,13 @@ void show_logs(LogLevel filter_level) {
 // TEXT EDITOR
 
 int keyboard_has_input() {
-    return inb(0x64) & 1;  // Verifica si hay datos en el buffer del teclado
+    return inb(0x64) & 1;  
 }
 
 
 char read_kboard() {
-    while (!(inb(0x64) & 1));  // Esperar a que haya datos disponibles
-    return inb(0x60);          // Leer carácter del teclado
+    while (!(inb(0x64) & 1));  
+    return inb(0x60);          
 }
 
 
@@ -620,8 +587,8 @@ char get_char() {
     char c;
     
     while (1) {
-        if (keyboard_has_input()) {  // Validar si hay entrada disponible
-            c = read_kboard();     // Función para leer el carácter
+        if (keyboard_has_input()) {   
+            c = read_kboard();     
             return c;
         }
     }
@@ -632,12 +599,12 @@ void edit_file(const char *filename, const char *new_content) {
     for (unsigned int i = 0; i < file_count; i++) {
         if (strcmp(file_table[i].name, filename) == 0) {
             
-            // 🔥 **Limpiar memoria sin usar `memset()`**
+          
             clear_memory(file_table[i].content, MAX_CONTENT_LENGTH);
 
             custom_strcpy(file_table[i].content, new_content);
             file_table[i].size = custom_strlen(new_content);
-            file_table[i].content[file_table[i].size] = '\0';  // 🔥 Agregar terminador seguro
+            file_table[i].content[file_table[i].size] = '\0';  
             
             return;
         }
@@ -656,9 +623,9 @@ void edit_file_interactive(const char *filename) {
     
     int index = 0;
     while (index < MAX_CONTENT_LENGTH - 1) {
-        char c = get_char();  // Leer entrada del usuario
+        char c = get_char();  
 
-        // 📌 Detectar Escape (ASCII 27) y salir automáticamente
+       
         if (c == 27) {
             k_printf("\nSaving file...\n", 0, GREEN_TXT);
             break;
@@ -667,11 +634,11 @@ void edit_file_interactive(const char *filename) {
         new_content[index++] = c;
     }
 
-    new_content[index] = '\0';  // Cerrar cadena correctamente
-    edit_file(filename, new_content);  // Guardar contenido
+    new_content[index] = '\0'; 
+    edit_file(filename, new_content);  
 
     k_printf("Exiting editor...\n", 0, WHITE_TXT);
-    return;  // Finalizar función
+    return;  
 }
 void view_file(const char *filename) {
     for (unsigned int i = 0; i < file_count; i++) {
@@ -686,11 +653,11 @@ void view_file(const char *filename) {
             for (unsigned int j = 0; j < file_table[i].size; j++) {
                 char c = file_table[i].content[j];
 
-                // 📌 **Evitar caracteres raros**
+               
                 if (c >= 32 && c <= 126) {  
                     k_printf_no_newline(&c, 0, WHITE_TXT);
                 } else {
-                    k_printf_no_newline(".", 0, RED_TXT);  // 🔥 Reemplazar caracteres inválidos
+                    k_printf_no_newline(".", 0, RED_TXT); 
                 }
             }
 
@@ -752,7 +719,6 @@ int fs_write(const char* filename, const char* content, unsigned int size) {
         }
     }
 
-    // Si no existe, crear uno nuevo
     if (file_count >= MAX_FILES) return -1;
 
     custom_strcpy(file_table[file_count].name, filename);
@@ -773,8 +739,10 @@ int fs_read(const char* filename, char* out_buf, unsigned int max_size) {
             return file_table[i].size;
         }
     }
-    return -1; // archivo no encontrado
+    return -1; 
 }
+
+
 
 
 void remove_file(const char *filename) {
@@ -801,12 +769,10 @@ int rmfile(const char *filename) {
 	return 0;
 }
 
-// ===== [ COMANDOS PERSONALIZADOS ] =====
 #define MAX_HISTORY 100
 char command_history[MAX_HISTORY][128];
 int history_count = 0;
 
-// Estructura para procesos
 typedef struct {
     int pid;
     char name[32];
@@ -815,7 +781,7 @@ Process process_table1[50];
 int process_count = 0;
 
 int fs_rename(const char *src, const char *dest) {
-    // Implementación básica de renombrar
+    
     for (int i = 0; i < file_count; i++) {
         if (strcmp(file_table[i].name, src) == 0) {
             strcpy(file_table[i].name, dest);
@@ -825,7 +791,7 @@ int fs_rename(const char *src, const char *dest) {
     return 0;
 }
 
-// === mv (se mantiene igual) ===
+
 void mv(const char *src, const char *dest) {
     if (fs_rename(src, dest)) {
         k_printf("Moved ", 0, GREEN_TXT);
@@ -837,7 +803,6 @@ void mv(const char *src, const char *dest) {
     }
 }
 
-// === less (visualizador) ===
 void less(const char *filename) {
     char content[MAX_CONTENT_LENGTH];
     int bytes = fs_read(filename, content, MAX_CONTENT_LENGTH);
@@ -849,7 +814,7 @@ void less(const char *filename) {
     }
 }
 
-// === digrep (búsqueda) ===
+
 void digrep(const char *pattern, const char *filename) {
     char content[MAX_CONTENT_LENGTH];
     int bytes = fs_read(filename, content, MAX_CONTENT_LENGTH);
@@ -859,36 +824,36 @@ void digrep(const char *pattern, const char *filename) {
     char *line_start = ptr;
     
     while (ptr < content + bytes) {
-        // Buscar fin de línea manualmente
+       
         char *line_end = line_start;
         while (*line_end && *line_end != '\n' && (line_end - content) < bytes) {
             line_end++;
         }
         
-        // Verificar si el patrón está en esta línea
+        
         char *temp_ptr = line_start;
         while (temp_ptr < line_end) {
             if (strncmp(temp_ptr, pattern, strlen(pattern)) == 0) {
-                // Mostrar número de línea
+                
                 char line_str[10];
                 itoa(line, line_str, 10);
                 k_printf("Line ", 0, CYAN_TXT);
                 k_printf(line_str, 0, WHITE_TXT);
                 k_printf(": ", 0, CYAN_TXT);
                 
-                // Mostrar contenido de la línea
+                
                 char *print_ptr = line_start;
                 while (print_ptr < line_end) {
                     char c = *print_ptr++;
                     k_printf_no_newline(&c, 0, WHITE_TXT);
                 }
-                k_printf_no_newline("\n", 0, WHITE_TXT);
+          
                 break;
             }
             temp_ptr++;
         }
         
-        // Avanzar a siguiente línea
+   
         if (*line_end == '\n') {
             line++;
             ptr = line_end + 1;
@@ -900,7 +865,6 @@ void digrep(const char *pattern, const char *filename) {
 }
 
 
-// === mc (history) ===
 void mc() {
     for (int i = 0; i < history_count; i++) {
         char num[10];
@@ -971,7 +935,7 @@ void set_background_color(const char *color_name) {
     } else if (strcmp(color_name, "darkblue") == 0) {
         current_bg_color = DARKBLUE_BG;
     } else {
-        k_printf("Error: Color not found.\n", 0, RED_TXT);
+        k_printf("Error: Color not found", 0, RED_TXT);
         return;
     }
 
@@ -1005,23 +969,108 @@ char* strcat(char *dest, const char *src) {
 void W_MSG();
 
 
+char* strtok(char* str, const char* delimiters) {
+    static char* saved_ptr = NULL;
+    if (str != NULL) {
+        saved_ptr = str;
+    }
+
+    if (saved_ptr == NULL || *saved_ptr == '\0') {
+        return NULL;
+    }
+
+    saved_ptr += strspn(saved_ptr, delimiters);
+    if (*saved_ptr == '\0') {
+        return NULL;
+    }
+
+ 
+    char* token_end = saved_ptr + strcspn(saved_ptr, delimiters);
+    if (*token_end != '\0') {
+        *token_end = '\0';
+        token_end++;
+    }
+
+    char* token = saved_ptr;
+    saved_ptr = token_end;
+    return token;
+}
+
+int strspn(const char* str, const char* accept) {
+    int count = 0;
+    while (*str && strchr(accept, *str)) {
+        str++;
+        count++;
+    }
+    return count;
+}
+
+int strcspn(const char* str, const char* reject) {
+    int count = 0;
+    while (*str && !strchr(reject, *str)) {
+        str++;
+        count++;
+    }
+    return count;
+}
+
+char* strchr(const char* s, int c) {
+    while (*s != (char)c) {
+        if (*s == '\0') return NULL;
+        s++;
+    }
+    return (char*)s;
+}
+
+void process_script_line(char* line) {
+   
+    if (line[0] == '\0' || line[0] == '#') {
+        return;
+    }
+
+
+    char* newline = strchr(line, '\n');
+    if (newline) *newline = '\0';
+
+   
+    strcpy(input_buffer, line);  
+    process_input();             
+}
+
+
+void bearsh_interpret(const char *filename) {
+    char content[MAX_CONTENT_LENGTH];
+    if (fs_read(filename, content, MAX_CONTENT_LENGTH) > 0) {
+        char *line = strtok(content, "\n");
+        while (line != NULL) {
+            process_script_line(line);  
+            line = strtok(NULL, "\n");
+        }
+    } else {
+        k_printf("Error: Script not found", cursor_y++, RED_TXT);
+    }
+}
+
+
+
+
 
 int mkdir(const char *dirname) {
 
     if (directory_count >= MAX_DIRECTORIES) {
-        k_printf("Error: No more directories can be created.\n", 0, RED_TXT);
+        k_printf("Error: No more directories can be created", 0, RED_TXT);
         return -1;
     }
 
 
     if (strlen(dirname) >= MAX_NAME_LENGTH) {
-        k_printf("Error: The name is long.\n", 0, RED_TXT);
+        k_printf("Error: The name is long.", 0, RED_TXT);
         return -1;
     }
 
     for (unsigned int i = 0; i < directory_count; i++) {
         if (strcmp(directory_table[i].name, dirname) == 0) {
-            k_printf("Error: The directory already exists.\n", 0, RED_TXT);
+            k_printf("Error: The directory already exists.", 0, RED_TXT);
             return -1;
         }
     }
@@ -1040,7 +1089,7 @@ int mkdir(const char *dirname) {
 
 int rmdir(const char *dirname) {
     if (directory_count == 0) {
-        k_printf("Error: No directories exist.\n", 0, RED_TXT);
+        k_printf("Error: No directories exist.", 0, RED_TXT);
         return -1;
     }
 
@@ -1055,13 +1104,13 @@ int rmdir(const char *dirname) {
             
             k_printf("Directory removed: ", 0, GREEN_TXT);
             k_printf_no_newline(dirname, 0, WHITE_TXT);
-            k_printf_no_newline("\n", 0, WHITE_TXT);
+
 
             return 0;
         }
     }
 
-    k_printf("Error: Directory not found.\n", 0, RED_TXT);
+    k_printf("Error: Directory not found", 0, RED_TXT);
     return -1;
 }
 
@@ -1090,53 +1139,44 @@ const char* strstr(const char* haystack, const char* needle) {
 // CD
 
 void pwd() {
-    char path[256] = "/";  // Siempre empieza con root
+    char path[256] = "/"; 
     char temp_path[256];
     unsigned int current = current_directory;
     int depth = 0;
 
-    // Construir path desde el directorio actual hasta root
-    while (current != 0 && depth < 10) {  // 10 = máximo de profundidad
-        strcpy(temp_path, "/");
-        strcat(temp_path, directory_table[current].name);
-        strcat(temp_path, path);
-        strcpy(path, temp_path);
-        current = directory_table[current].parent_dir;
-        depth++;
-    }
 
-    k_printf(path, 0, WHITE_TXT);
+
+    k_printf(path, cursor_y++, WHITE_TXT);
 }
 
 
 
 int cd_back() {
     if (current_directory == 0) {
-        k_printf("Error: Already at root.\n", 0, RED_TXT);
+        k_printf("Error: Already at root.", 0, RED_TXT);
         return -1;
     }
 
-    current_directory--;  // Retrocede un nivel en la jerarquía
+    current_directory--;  
 
     k_printf("Moved back to: ", 0, GREEN_TXT);
     k_printf_no_newline(directory_table[current_directory].name, 0, WHITE_TXT);
-    k_printf_no_newline("\n", 0, WHITE_TXT);
 
     return 0;
 }
 int cd(const char *dirname) {
-    // Caso especial: cd ..
+   
     if (strcmp(dirname, "..") == 0) {
-        if (current_directory != 0) {  // No permitir salir del root
+        if (current_directory != 0) {  
             current_directory = directory_table[current_directory].parent_dir;
             pwd();
             return 0;
         }
-        k_printf("Already at root", 0, RED_TXT);
+        k_printf("Already at root", cursor_y++, RED_TXT);
         return -1;
     }
 
-    // Buscar solo en directorios hijos del actual
+   
     for (unsigned int i = 0; i < directory_count; i++) {
         if (strcmp(directory_table[i].name, dirname) == 0 && 
             directory_table[i].parent_dir == current_directory) {
@@ -1350,7 +1390,7 @@ void wat(const char *filename) {
         for (int i = 0; i < bytes_read; i++) {
             if (content[i] == '\n') {
                 line++;
-            } else if (content[i] >= 32 && content[i] <= 126) { // Caracteres imprimibles
+            } else if (content[i] >= 32 && content[i] <= 126) { 
                 char c = content[i];
                 k_printf_no_newline(&c, line, WHITE_TXT);
             }
@@ -1375,7 +1415,7 @@ void where(const char *filename) {
 
     int line = 0;
     int page = 0;
-    int max_lines = 20; // Líneas por "página"
+    int max_lines = 20; 
     
     while (1) {
         k_clear_screen();
@@ -1387,7 +1427,7 @@ void where(const char *filename) {
         k_printf(page_str, 0, WHITE_TXT);
         k_printf("):", 0, ORANGE_TXT);
 
-        // Mostrar contenido paginado
+        
         int current_line = 0;
         for (int i = 0; i < bytes_read && current_line < (page + 1) * max_lines; i++) {
             if (content[i] == '\n') {
@@ -1403,10 +1443,10 @@ void where(const char *filename) {
             }
         }
 
-        // Instrucciones
+      
         k_printf_xy("-- SPACE: next page | Q: quit --", 0, 24, GRAY_TXT);
 
-        // Esperar input
+        // wait input
         while (1) {
             if (keyboard_has_input()) {
                 unsigned char scancode = inb(0x60);
@@ -1437,26 +1477,24 @@ typedef unsigned int uint32_t;
 #define false 0
 typedef int bool;
 
-// Estructura para paquetes de red
+
 typedef struct {
     uint8_t payload[1500];
     uint16_t length;
 } NetworkPacket;
 
 
-// Variables globales
+
 NetworkPacket received_packet;
 unsigned int total_packages = 0;
 
-// Estructura de paquetes (simplificada)
 typedef struct {
     char name[50];
-    // ... (otros campos que necesites)
+    
 } PackageEntry;
-PackageEntry package_db[100];  // Máximo 100 paquetes
+PackageEntry package_db[100]; 
 
 
-// Versión personalizada de memcpy
 void* my_memcpy(void* dest, const void* src, unsigned int n) {
     char* d = (char*)dest;
     const char* s = (const char*)src;
@@ -1464,7 +1502,6 @@ void* my_memcpy(void* dest, const void* src, unsigned int n) {
     return dest;
 }
 
-// Versión personalizada de strstr
 const char* my_strstr(const char* haystack, const char* needle) {
     if (!*needle) return haystack;
     while (*haystack) {
@@ -1482,9 +1519,8 @@ const char* my_strstr(const char* haystack, const char* needle) {
     return 0;
 }
 
-#define NIC_PORT 0xCF8  // Puerto PCI para la NIC (ej: RTL8139)
+#define NIC_PORT 0xCF8  
 
-// Función personalizada memcpy
 void* memcpy(void* dest, const void* src, unsigned int n) {
     char* d = (char*)dest;
     const char* s = (const char*)src;
@@ -1494,17 +1530,15 @@ void* memcpy(void* dest, const void* src, unsigned int n) {
     return dest;
 }
 
-// Función personalizada strstr
 
 
-// Función para verificar paquetes (simulada)
 bool packet_received() {
-    // En una implementación real, verificaría el hardware
+
     static int counter = 0;
-    return (counter++ > 3);  // Simula recepción después de 3 intentos
+    return (counter++ > 3); 
 }
 
-// Función para enviar paquetes (simulada)
+
 void send_packet(uint8_t* data, uint16_t len) {
     memcpy(received_packet.payload, data, len);
     received_packet.length = len;
@@ -1531,7 +1565,7 @@ void beardog_install(const char* pkg_name) {
     k_printf("Installing: ", 0, GREEN_TXT);
     k_printf(pkg_name, 0, WHITE_TXT);
     
-    // Añadir a la base de datos local
+    
     unsigned int name_len = 0;
     while (pkg_name[name_len] && name_len < 49) {
         package_db[total_packages].name[name_len] = pkg_name[name_len];
@@ -1542,12 +1576,12 @@ void beardog_install(const char* pkg_name) {
 }
 
 void nic_init() {
-    // 1. Detectar hardware
-    outl(NIC_PORT, 0x80000000);  // Buscar dispositivos PCI
+   
+    outl(NIC_PORT, 0x80000000);  
     uint32_t nic_info = inl(NIC_PORT + 0x10);
     
-    // 2. Configurar NIC (ejemplo para RTL8139)
-    outb(NIC_PORT + 0x69, 0x01);  // Encender NIC
+    
+    outb(NIC_PORT + 0x69, 0x01);  
     k_printf("NIC Initialized", 0, GREEN_TXT);
 }
 
@@ -1555,7 +1589,7 @@ void http_get(const char* host, const char* path, char* output) {
     char request[256];
     char* ptr = request;
     
-    // Construir request manualmente
+ 
     const char* parts[] = {"GET ", path, " HTTP/1.1\0Host: ", host, "\0"};
     for (int i = 0; i < 5; i++) {
         const char* p = parts[i];
@@ -1565,7 +1599,6 @@ void http_get(const char* host, const char* path, char* output) {
     send_packet((uint8_t*)request, ptr - request);
     
     while (!packet_received()) {
-        // Esperar activamente (en realidad usarías IRQs)
         asm volatile("pause");
     }
     
@@ -1590,7 +1623,7 @@ typedef struct {
     char name[50];
     char version[20];
     char description[100];
-    char dependencies[5][50];  // Max 5 deps por paquete
+    char dependencies[5][50]; 
     int is_installed;
 } BearPackage;
 
@@ -1601,7 +1634,7 @@ void beardog_update() {
     char response[4096];
     http_get("repo.bearos.org", "/packages.json", response);
     
-    // Procesar JSON manualmente (ejemplo básico)
+   
     if (strstr(response, "\"name\":\"nginx\"")) {
         k_printf("Nginx available!", 0, GREEN_TXT);
     }
@@ -1872,7 +1905,7 @@ void save_command(const char *cmd) {
 
 void show_command_history() {
     for (unsigned int i = 0; i < MAX_HISTORY; i++) {
-        if (command_history[i][0] != '\0') {  // Evitar entradas vacías
+        if (command_history[i][0] != '\0') {  
             k_clear_screen();
             k_printf("Commands saved:", 0, GREEN_TXT);
             k_printf(command_history[i], 3, WHITE_TXT);
@@ -1920,7 +1953,7 @@ void list_items() {
 
 
     if (directory_count > 0) {
-        k_printf("Directory's:\n", cursor_y++, BLUE_TXT);
+        k_printf("Directory's:", cursor_y++, BLUE_TXT);
         for (unsigned int i = 0; i < directory_count; i++) {
             k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
             k_printf(directory_table[i].name, cursor_y++, WHITE_TXT);
@@ -1930,7 +1963,7 @@ void list_items() {
 
 
     if (file_count > 0) {
-        k_printf("File's:\n", cursor_y++, GREEN_TXT);
+        k_printf("File's:", cursor_y++, GREEN_TXT);
         for (unsigned int i = 0; i < file_count; i++) {
             k_printf("  - ", cursor_y++, WHITE_TXT);
             k_printf(file_table[i].name, cursor_y++, WHITE_TXT);
@@ -1940,7 +1973,7 @@ void list_items() {
 
 
     if (directory_count == 0 && file_count == 0) {
-        k_printf("No content.\n", 1, WHITE_TXT);
+        k_printf("No content.", 1, WHITE_TXT);
 
     }
 }
@@ -2024,16 +2057,16 @@ void put_char(char c) {
 
 // ===== [ atoi IMPLEMENTATION ] =====
 int atoi(const char *str) {
-    int result = 0;      // Almacena el resultado
-    int sign = 1;        // Signo positivo/negativo
-    int i = 0;           // Índice para recorrer el string
+    int result = 0;      
+    int sign = 1;        
+    int i = 0;           
     
-    // 1. Saltar espacios en blanco iniciales
+
     while (str[i] == ' ' || str[i] == '\t' || str[i] == '\n') {
         i++;
     }
     
-    // 2. Manejar signo positivo/negativo
+   
     if (str[i] == '-') {
         sign = -1;
         i++;
@@ -2041,21 +2074,17 @@ int atoi(const char *str) {
         i++;
     }
     
-    // 3. Convertir dígitos a número
     while (str[i] >= '0' && str[i] <= '9') {
-        // Multiplicar resultado actual por 10 y sumar nuevo dígito
         result = result * 10 + (str[i] - '0');
         i++;
     }
     
-    // 4. Aplicar signo y retornar
     return sign * result;
 }
 
 
 
 
-// En bearinstall_config_screen al final:
 
 
 // ===== [ strcat IMPLEMENTATION ] =====
@@ -2079,7 +2108,7 @@ typedef struct {
 QBEditor qb_editor;
 
 void qb_init_editor(const char *filename) {
-    // Limpiar el editor
+    
     for (int i = 0; i < QB_MAX_LINES; i++) {
         qb_editor.lines[i][0] = '\0';
     }
@@ -2089,7 +2118,6 @@ void qb_init_editor(const char *filename) {
     strcpy(qb_editor.filename, filename);
     qb_editor.modified = 0;
 
-    // Intentar cargar el archivo si existe
     char file_content[MAX_CONTENT_LENGTH];
     if (fs_read(filename, file_content, MAX_CONTENT_LENGTH) > 0) {
         int line = 0;
@@ -2111,7 +2139,7 @@ void qb_draw_status_bar() {
     char status[80];
     const char *modified_str = qb_editor.modified ? "Modified" : "Saved";
     
-    // Construir el string manualmente
+   
     int pos = 0;
     
     // "QBear | "
@@ -2120,7 +2148,7 @@ void qb_draw_status_bar() {
         status[pos++] = *prefix++;
     }
     
-    // Nombre del archivo
+
     const char *filename = qb_editor.filename;
     while (*filename && pos < sizeof(status) - 1) {
         status[pos++] = *filename++;
@@ -2132,21 +2160,21 @@ void qb_draw_status_bar() {
         status[pos++] = *separator++;
     }
     
-    // Estado (Modified/Saved)
+    // state (Modified/Saved)
     while (*modified_str && pos < sizeof(status) - 1) {
         status[pos++] = *modified_str++;
     }
     
-    // Terminar el string
+    // end string
     status[pos] = '\0';
     
-    // Rellenar el resto con espacios si es necesario
+    
     while (pos < sizeof(status) - 1) {
         status[pos++] = ' ';
     }
     status[sizeof(status) - 1] = '\0';
     
-    // Dibujar barra de estado
+    
     for (int i = 0; i < 80; i++) {
         unsigned char attr = (i < pos) ? 0x70 : 0x07;
         text_draw(i, 24, status[i], attr);
@@ -2154,14 +2182,14 @@ void qb_draw_status_bar() {
 }
 
 void qb_force_redraw() {
-    // Limpiar área de texto (sin afectar la barra de estado)
+    
     for (int y = 0; y < 23; y++) {
         for (int x = 0; x < 80; x++) {
             text_draw(x, y, ' ', 0x07);
         }
     }
     
-    // Redibujar todo el contenido
+    
     for (int y = 0; y < 23 && y < qb_editor.line_count; y++) {
         for (int x = 0; x < QB_LINE_LEN && qb_editor.lines[y][x]; x++) {
             text_draw(x, y, qb_editor.lines[y][x], 0x07);
@@ -2170,35 +2198,35 @@ void qb_force_redraw() {
 }
 
 void qb_draw_content() {
-    // Solo limpia la pantalla la primera vez
+    
     static int first_time = 1;
     if (first_time) {
         k_clear_screen();
         first_time = 0;
     }
     
-    // Mostrar contenido (solo líneas visibles)
+    
     for (int i = 0; i < 23 && i < qb_editor.line_count; i++) {
-        // Solo redibujar líneas modificadas
+        
         if (qb_editor.lines[i][0] != 0) {
             for (int j = 0; j < QB_LINE_LEN && qb_editor.lines[i][j]; j++) {
                 text_draw(j, i, qb_editor.lines[i][j], 0x07);
             }
-            // Limpiar el resto de la línea
+            
             for (int j = strlen(qb_editor.lines[i]); j < 80; j++) {
                 text_draw(j, i, ' ', 0x07);
             }
         }
     }
     
-    // Mostrar cursor (borrar posición anterior primero)
+    
     static int prev_cursor_x = 0, prev_cursor_y = 0;
     if (prev_cursor_y < 23 && prev_cursor_x < 80) {
         char prev_char = qb_editor.lines[prev_cursor_y][prev_cursor_x];
         text_draw(prev_cursor_x, prev_cursor_y, prev_char, 0x07);
     }
     
-    // Dibujar cursor nuevo
+    // draw new cursor
     if (qb_editor.cursor_y < 23 && qb_editor.cursor_x < 80) {
         unsigned short cursor_pos = qb_editor.cursor_y * SCREEN_WIDTH + qb_editor.cursor_x;
         VIDEO_MEMORY[cursor_pos] = (VIDEO_MEMORY[cursor_pos] & 0xFF00) | 0x5F;
@@ -2229,21 +2257,21 @@ void qb_save_file() {
 void qb_handle_input() {
     unsigned char scancode = inb(0x60);
     
-    if (scancode == 0x01) { // ESC - Salir
+    if (scancode == 0x01) { // ESC - exit
         if (qb_editor.modified) {
-            // Preguntar si guardar antes de salir
+        
             qb_draw_status_bar();
             k_printf_xy("Save changes? (Y/N/C)", 10, 15, 0x4F);
             qb_draw_content();
             
             while (1) {
                 scancode = inb(0x60);
-                if (scancode == 0x15) { // Y - Guardar y salir
+                if (scancode == 0x15) { // Y - save and exit
                     qb_save_file();
                     return;
-                } else if (scancode == 0x31) { // N - Salir sin guardar
+                } else if (scancode == 0x31) { // N - exit without saved
                     return;
-                } else if (scancode == 0x2E) { // C - Cancelar
+                } else if (scancode == 0x2E) { // C 
                     break;
                 }
             }
@@ -2254,52 +2282,52 @@ void qb_handle_input() {
     
 else if (scancode == 0x1C) { // Enter
     if (qb_editor.line_count < QB_MAX_LINES - 1) {
-        // Detectar si estamos al final de la línea (columna 0 o después del último carácter)
+        
         int at_end_of_line = (qb_editor.cursor_x == 0) || 
                             (qb_editor.cursor_x == strlen(qb_editor.lines[qb_editor.cursor_y]));
         
-        // Mover líneas hacia abajo
+       
         for (int i = qb_editor.line_count; i > qb_editor.cursor_y + 1; i--) {
             strcpy(qb_editor.lines[i], qb_editor.lines[i-1]);
         }
 
         if (at_end_of_line) {
-            // Caso 1: Enter al final -> línea nueva vacía
+          
             qb_editor.lines[qb_editor.cursor_y + 1][0] = '\0';
         } else {
-            // Caso 2: Enter en medio -> dividir la línea
+           
             strcpy(qb_editor.lines[qb_editor.cursor_y + 1], 
                   &qb_editor.lines[qb_editor.cursor_y][qb_editor.cursor_x]);
             qb_editor.lines[qb_editor.cursor_y][qb_editor.cursor_x] = '\0';
         }
 
-        // Actualizar posición
+     
         qb_editor.cursor_y++;
         qb_editor.cursor_x = 0;
         qb_editor.line_count++;
         qb_editor.modified = 1;
         
-        // Redibujar
+        // rebuild
         qb_force_redraw();
     }
 }
     else if (scancode == 0x0E) { // Backspace
         if (qb_editor.cursor_x > 0) {
-            // Eliminar carácter
+          
             for (int i = qb_editor.cursor_x - 1; i < QB_LINE_LEN - 1; i++) {
                 qb_editor.lines[qb_editor.cursor_y][i] = qb_editor.lines[qb_editor.cursor_y][i+1];
             }
             qb_editor.cursor_x--;
             qb_editor.modified = 1;
         } else if (qb_editor.cursor_y > 0) {
-            // Unir con línea anterior
+          
             int prev_len = strlen(qb_editor.lines[qb_editor.cursor_y - 1]);
             int curr_len = strlen(qb_editor.lines[qb_editor.cursor_y]);
             
             if (prev_len + curr_len < QB_LINE_LEN - 1) {
                 strcat(qb_editor.lines[qb_editor.cursor_y - 1], qb_editor.lines[qb_editor.cursor_y]);
                 
-                // Mover líneas hacia arriba
+                
                 for (int i = qb_editor.cursor_y; i < qb_editor.line_count - 1; i++) {
                     strcpy(qb_editor.lines[i], qb_editor.lines[i+1]);
                 }
@@ -2310,7 +2338,7 @@ else if (scancode == 0x1C) { // Enter
             }
         }
     }
-    else if (scancode == 0x1C) { // Ctrl+S - Guardar
+    else if (scancode == 0x1C) { // Ctrl+S - savedd
         qb_save_file();
         k_printf_xy("File saved!", 10, 35, 0x2F);
         delay(500);
@@ -2327,17 +2355,17 @@ else if (scancode == 0x1C) { // Enter
             qb_editor.modified = 1;
         }
     }
-    // Manejo de flechas
-    else if (scancode == 0x48) { // Flecha arriba
+    // management arrow
+    else if (scancode == 0x48) { // arrow top
         if (qb_editor.cursor_y > 0) qb_editor.cursor_y--;
     }
-    else if (scancode == 0x50) { // Flecha abajo
+    else if (scancode == 0x50) { // arrow bottom
         if (qb_editor.cursor_y < qb_editor.line_count - 1) qb_editor.cursor_y++;
     }
-    else if (scancode == 0x4B) { // Flecha izquierda
+    else if (scancode == 0x4B) { // arrow left
         if (qb_editor.cursor_x > 0) qb_editor.cursor_x--;
     }
-    else if (scancode == 0x4D) { // Flecha derecha
+    else if (scancode == 0x4D) { // arrow right
         if (qb_editor.cursor_x < strlen(qb_editor.lines[qb_editor.cursor_y])) qb_editor.cursor_x++;
     }
 }
@@ -2349,24 +2377,22 @@ void qbear(const char *filename) {
     while (1) {
         if (keyboard_has_input()) {
             unsigned char scancode = inb(0x60);
-            if (scancode != last_key) {  // Evitar repetición de teclas
+            if (scancode != last_key) {  
                 last_key = scancode;
                 qb_handle_input();
                 
-                // Redibujar solo si hubo cambios
+                
                 qb_draw_content();
                 
-                // Salir si handle_input lo indica
                 if (scancode == 0x01) break; // ESC
             }
         } else {
             last_key = 0;
-            // Pequeña pausa para reducir el consumo de CPU
             for (int i = 0; i < 10000; i++) asm volatile("nop");
         }
     }
     
-    // Restaurar pantalla
+
     k_clear_screen();
     W_MSG();
 }
@@ -2433,39 +2459,38 @@ void usrcreate(void);
 void usrremove(const char *username);
 
 /* ===== [ IMPLEMENTACIÓN DE FUNCIONES DE USUARIOS ] ===== */
-// Añade esto en tu kernel.c después de las funciones existentes
 
 void save_user_to_disk(UserEntry *user) {
     if (user_count >= MAX_USERS) return;
     
-    // Construir entrada: username:password:uid:is_admin:home_dir
+    
     char entry[256];
     int pos = 0;
     
-    // Copiar username
+    // copy username
     const char *u = user->username;
     while (*u && pos < sizeof(entry) - 1) {
         entry[pos++] = *u++;
     }
     
-    // Separador
+
     if (pos < sizeof(entry) - 1) entry[pos++] = ':';
     
-    // Copiar password
+    // copy password
     const char *p = user->password;
     while (*p && pos < sizeof(entry) - 1) {
         entry[pos++] = *p++;
     }
     
-    // Separador
+   
     if (pos < sizeof(entry) - 1) entry[pos++] = ':';
     
-    // Convertir UID a string
+    
     int temp = user->uid;
     char uid_str[16];
     int uid_len = 0;
     
-    // Manejar caso especial para 0
+    
     if (temp == 0) {
         uid_str[uid_len++] = '0';
     } else {
@@ -2475,28 +2500,28 @@ void save_user_to_disk(UserEntry *user) {
         }
     }
     
-    // Copiar UID invertido
+   
     for (int i = uid_len - 1; i >= 0; i--) {
         if (pos < sizeof(entry) - 1) {
             entry[pos++] = uid_str[i];
         }
     }
     
-    // Separador y admin
+
     if (pos < sizeof(entry) - 1) entry[pos++] = ':';
     if (pos < sizeof(entry) - 1) entry[pos++] = user->is_admin ? '1' : '0';
     if (pos < sizeof(entry) - 1) entry[pos++] = ':';
     
-    // Copiar home_dir
+
     const char *h = user->home_dir;
     while (*h && pos < sizeof(entry) - 1) {
         entry[pos++] = *h++;
     }
     
-    // Finalizar string
+
     entry[pos] = '\0';
     
-    // Guardar en /etc/passwd
+    // save in /etc/passwd
     fs_write("/etc/passwd", entry, pos);
     mkdir("cfg");
     fs_write("/cfg/global.bearcfg", "GLOBAL_end=DEFAULT", 10);
@@ -2507,59 +2532,55 @@ void finalize_user_creation(void) {
     save_user_to_disk(&current_user);
     user_count++;
     
-    // Crear directorio home
+
     mkdir(current_user.home_dir);
     
-    // Mostrar confirmación
+  
     k_clear_screen();
     k_printf_xy("User setup complete! Returning to shell...", 20, 12, GREEN_TXT);
     delay(2000);
     
-    // Restaurar estado shell
+    
     current_state = STATE_SHELL;
     k_clear_screen();
     cursor_x = 0;
     cursor_y = 0;
-    W_MSG();  // Redibujar interfaz shell
+    W_MSG();  
 }
 
-/* ===== [ INSTALADOR BEARINSTALL ] ===== */
-// Función principal del instalador
 
 void bearinstall_create_user(void) {
-    // Inicializar current_user manualmente
+
     for (unsigned int i = 0; i < sizeof(UserEntry); i++) {
         ((char*)&current_user)[i] = 0;
     }
     
-    // ... [Aquí va tu código existente para recolectar usuario/contraseña] ...
-    
-    // Establecer valores iniciales
+
     current_user.uid = 1000 + user_count;
     
-    // Construir home_dir: "/home/username"
+
     const char *home_pref = "/home/";
     char *dest_ptr = current_user.home_dir;
     
-    // Copiar "/home/"
+    
     while (*home_pref) {
         *dest_ptr++ = *home_pref++;
     }
     
-    // Añadir username
+   
     const char *u_ptr = current_user.username;
     while (*u_ptr) {
         *dest_ptr++ = *u_ptr++;
     }
     *dest_ptr = '\0';
     
-    // Cambiar al estado de configuración
+    
     current_state = STATE_USER_CONFIG;
 }
 
 
 void bearinstall_config_screen(void) {
-    // Variables para la configuración
+
     int selected_option = 0;
     int total_options = 4;
     unsigned char last_sc = 0;
@@ -2571,35 +2592,30 @@ void bearinstall_config_screen(void) {
     int enable_network = 1;
     int install_drivers = 1;
     
-    // Timezone options
+   
     const char *timezones[] = {"UTC", "EST", "PST", "CET", "GMT"};
     int tz_index = 0;
     int tz_count = sizeof(timezones) / sizeof(timezones[0]);
 
     while (!save_config) {
-        // Dibujar ventana de configuración
+        
         k_clear_screen();
         
-        // ... [Código para dibujar la interfaz Windows 98] ...
         
-        // Mostrar información del usuario
         k_printf_xy("Configuring user:", 17, 5, 0x70);
         k_printf_xy(current_user.username, 35, 5, 0x07);
-        
-        // Mostrar opciones
+
         k_printf_xy("1. Administrator privileges:", 17, 7, 
                      selected_option == 0 ? 0x0F : 0x07);
         k_printf_xy(is_admin ? "[X]" : "[ ]", 45, 7, 
                      selected_option == 0 ? 0x0F : 0x07);
         
-        // ... [Otras opciones] ...
-        
-        // Instrucciones
+
         k_printf_xy("Enter=Toggle  Arrows=Navigate", 17, 17, 0x07);
         k_printf_xy("Esc=Save config", 17, 18, 0x07);
         k_printf_xy("F1=Use default", 45, 18, 0x07);
         
-        // Manejar entrada
+ 
         if (keyboard_has_input()) {
             unsigned char scancode = inb(0x60);
             
@@ -2607,18 +2623,18 @@ void bearinstall_config_screen(void) {
                 save_config = 1;
                 break;
             } else if (scancode == 0x3B) { // F1
-                // Configuración por defecto
+            
                 is_admin = 0;
                 tz_index = 0;
                 enable_network = 1;
                 install_drivers = 1;
             } else if (scancode & 0x80) {
-                continue; // Ignorar liberación de tecla
+                continue; 
             } else {
-                // Navegación
-                if (scancode == 0x48) { // Flecha arriba
+           
+                if (scancode == 0x48) {
                     if (selected_option > 0) selected_option--;
-                } else if (scancode == 0x50) { // Flecha abajo
+                } else if (scancode == 0x50) { 
                     if (selected_option < total_options - 1) selected_option++;
                 }
 
@@ -2635,19 +2651,17 @@ void bearinstall_config_screen(void) {
 
         }
         
-        // Pequeña pausa para reducir parpadeo
+        
         for (int i = 0; i < 10000; i++) asm volatile("nop");
     }
     
-    // Guardar configuración
+
     current_user.is_admin = is_admin;
     
-    // Finalizar creación de usuario
+  
     finalize_user_creation();
 }
 
-/* ===== [ COMANDOS DE GESTIÓN DE USUARIOS ] ===== */
-// Añade esto en tu sección de comandos
 
 void usrlist(void) {
     if (user_count == 0) {
@@ -2684,13 +2698,13 @@ void usrlist(void) {
             }
         }
         
-        // Copiar UID invertido
+        
         for (int j = uid_len - 1; j >= 0; j--) {
             line[pos++] = uid_str[j];
         }
         line[pos++] = ']';
         
-        // Admin status
+        
         if (user_table[i].is_admin) {
             const char *admin = " ADMIN";
             while (*admin) line[pos++] = *admin++;
@@ -2702,7 +2716,7 @@ void usrlist(void) {
 }
 
 void usrcreate(void) {
-    // Inicializar manualmente
+   
     UserEntry new_user;
     for (unsigned int i = 0; i < sizeof(UserEntry); i++) {
         ((char*)&new_user)[i] = 0;
@@ -2712,7 +2726,7 @@ void usrcreate(void) {
     char c;
     int index = 0;
     
-    // Leer username
+    
     while ((c = get_char()) != '\n' && index < 31) {
         if (c == '\b' && index > 0) {
             index--;
@@ -2727,7 +2741,7 @@ void usrcreate(void) {
     k_printf("\nEnter password: ", 1, CYAN_TXT);
     index = 0;
     
-    // Leer password
+   
     while ((c = get_char()) != '\n' && index < 31) {
         if (c == '\b' && index > 0) {
             index--;
@@ -2739,11 +2753,11 @@ void usrcreate(void) {
     }
     new_user.password[index] = '\0';
     
-    // Establecer UID y home
+   
     new_user.uid = 1000 + user_count;
     new_user.is_admin = 0;
     
-    // Construir home_dir
+
     const char *home_pref = "/home/";
     char *h_ptr = new_user.home_dir;
     while (*home_pref) *h_ptr++ = *home_pref++;
@@ -2751,11 +2765,11 @@ void usrcreate(void) {
     while (*uname) *h_ptr++ = *uname++;
     *h_ptr = '\0';
     
-    // Guardar usuario
+    
     save_user_to_disk(&new_user);
     user_count++;
     
-    // Crear directorio home
+  
     mkdir(new_user.home_dir);
     
     k_printf("\nUser created successfully!", 2, GREEN_TXT);
@@ -2786,9 +2800,9 @@ void usrremove(const char *username) {
         return;
     }
     
-    // Mover usuarios posteriores hacia atrás
+
     for (int i = found_index; i < user_count - 1; i++) {
-        // Copiar manualmente
+      
         for (unsigned int j = 0; j < sizeof(UserEntry); j++) {
             ((char*)&user_table[i])[j] = ((char*)&user_table[i+1])[j];
         }
@@ -2796,7 +2810,7 @@ void usrremove(const char *username) {
     
     user_count--;
     
-    // Reconstruir /etc/passwd
+    // rebuild /etc/passwd
     char new_passwd[1024] = {0};
     char *ptr = new_passwd;
     
@@ -2804,10 +2818,7 @@ void usrremove(const char *username) {
         char entry[256];
         int pos = 0;
         
-        // Construir entrada manualmente (como en save_user_to_disk)
-        // ... [implementación similar a save_user_to_disk] ...
-        
-        // Copiar al buffer
+
         const char *src = entry;
         while (*src) {
             *ptr++ = *src++;
@@ -2815,20 +2826,12 @@ void usrremove(const char *username) {
         *ptr++ = '\n';
     }
     
-    // Guardar nuevo archivo
-    fs_write("/etc/passwd", new_passwd, ptr - new_passwd);
+    fs_write("etc/passwd", new_passwd, ptr - new_passwd);
+
     
     k_printf("User removed", 0, GREEN_TXT);
 }
 
-/* ===== [ INTEGRACIÓN CON EL SISTEMA PRINCIPAL ] ===== */
-// Modifica tu función process_input
-
-
-
-
-/* ===== [ FUNCIONES AUXILIARES ] ===== */
-// Añade estas implementaciones si no las tienes
 
 
 
@@ -2886,7 +2889,7 @@ int vfs_mount(const char *type, const char *mountpoint, fs_operations_t ops) {
 
 int get_mountpoint_id(const char *path) {
     for (int i = 0; i < mountpoints_count; i++) {
-        // Aquí puedes mejorar con strncmp
+       
         int match = 1;
         for (int j = 0; mountpoints[i].mountpoint[j] && path[j]; j++) {
             if (mountpoints[i].mountpoint[j] != path[j]) {
@@ -2954,21 +2957,26 @@ void vfs_init() {
     for (int i = 0; i < MAX_OPENED_FILES; i++) {
         vfs_opened_files[i].fs_file_id = -1;
     }
+   
 }
-void vfs_list_mountpoints(int start_row) {
-    const char *title = "Mountpoints activos:";
-    for (int i = 0; title[i]; i++)
-        text_draw(i, start_row, title[i], 0x0F); // línea de título
-
-    for (int i = 0; i < mountpoints_count; i++) {
+void vfs_list_mountpoints() {
+    
+    if(mountpoints_count == 0) {
+        k_printf("ERROR: No partition exists, create it!", cursor_y++, RED_TXT);
+    } else {
+        k_printf("Mountpoints assets:", cursor_y++, WHITE_TXT);
+        for (int i = 0; i < mountpoints_count; i++) {
         int col = 0;
         const char *prefix = "- ";
         for (int j = 0; prefix[j]; j++)
-            text_draw(col++, start_row + i + 1, prefix[j], 0x0A); // color verde
+            text_draw(col++, cursor_y + i + 1, prefix[j], 0x0A); // green color
 
         for (int j = 0; mountpoints[i].mountpoint[j] && col < 80; j++)
-            text_draw(col++, start_row + i + 1, mountpoints[i].mountpoint[j], 0x0F);
+            text_draw(col++, cursor_y + i + 1, mountpoints[i].mountpoint[j], 0x0F);
+        }
+        cursor_y + 1;
     }
+    
 }
 
 
@@ -3047,31 +3055,29 @@ void display_stats() {
 
 
 // FONT's System.
-// Tipos mínimos
+
 typedef unsigned char  u8;
 typedef unsigned int   u32;
 
 
-// Framebuffer (dirección ficticia, cámbiala por la real)
 u32* framebuffer = (u32*)0xE0000000;
 u32 screen_width = 1024;
 u32 screen_height = 768;
 
-// Fuente binaria 8x16 (cada carácter ocupa 16 bytes)
 u8 font_default[] = {
-    // ← pega aquí tu arreglo completo font_default[]
+    
 };
 
-// Pinta un píxel en pantalla
+
 void put_pixel(u32 x, u32 y, u32 color) {
     if (x < screen_width && y < screen_height) {
         framebuffer[y * screen_width + x] = color;
     }
 }
 
-// Dibuja un carácter escalado desde font_default[]
+
 void draw_char(int x, int y, char c, int scale, u32 color) {
-    int index = (int)c * 16; // 16 bytes por carácter
+    int index = (int)c * 16; 
     for (int row = 0; row < 16; row++) {
         u8 row_data = font_default[index + row];
         for (int col = 0; col < 8; col++) {
@@ -3086,7 +3092,7 @@ void draw_char(int x, int y, char c, int scale, u32 color) {
     }
 }
 
-// Imprime texto con soporte de salto de línea (\n)
+
 void draw_text(int x, int y, const char* text, int scale, u32 color) {
     int orig_x = x;
     while (*text) {
@@ -3139,20 +3145,20 @@ void process_input_logged() {
 
 }
 void parse_http_cmd(const char* input, char* host, char* path) {
-    // Saltar "http_get "
+    
     while (*input && *input != ' ') input++;
-    while (*input == ' ') input++;  // Saltar espacios extra
+    while (*input == ' ') input++; 
 
-    // Extraer host (hasta primer espacio)
+    
     while (*input && *input != ' ' && *input != '\n') {
         *host++ = *input++;
     }
     *host = '\0';
 
-    // Saltar espacios
+    
     while (*input == ' ') input++;
 
-    // Extraer path (hasta fin de línea)
+    
     while (*input && *input != '\n') {
         *path++ = *input++;
     }
@@ -3209,10 +3215,9 @@ void process_input() {
         char path[50] = {0};
         k_clear_screen();
         
-        // Parsear manualmente
+     
         parse_http_cmd(input_buffer, host, path);
-        
-        // Validación básica
+       
         if (!host[0] || !path[0]) {
             k_printf("Usage: http_get host path", 0, RED_TXT);
             return;
@@ -3304,7 +3309,7 @@ void process_input() {
     	save_command(cmd);
     }
     
-    else if (strncmp(input_buffer, "vfs ", 4) == 0) {
+    else if (strncmp(input_buffer, "vfs create", 10) == 0) {
         cursor_y = cursor_y + 4;
      	const char *mnt_name = input_buffer + 4;
 
@@ -3317,22 +3322,18 @@ void process_input() {
 	    };
 
     		vfs_mount(mnt_name, "/mnt", memfs_ops);
+            fs_read("mnt/mountglobal", mountpoints, 20);
     		k_printf("A 'mnt' has been created successfully!", cursor_y++, GREEN_TXT);
     }
     
     
     
-    else if (strcmp(input_buffer, "vfslist") == 0) {
-    vfs_list_mountpoints(12);
+    else if (strcmp(input_buffer, "vfs list") == 0) {
+        vfs_list_mountpoints();
     }
     else if (strcmp(input_buffer, "history") == 0)  {
     	k_clear_screen();
     	show_command_history();
-    }
-     else if (strncmp(input_buffer, "edit ", 5) == 0) {
-        cursor_y = cursor_y + 1;
-     	const char *filename = input_buffer + 5;
-    	edit_file_interactive(filename);
     }
 
    
@@ -3385,12 +3386,8 @@ else if (strcmp(input_buffer, "sniff") == 0) {
         get_time();
     }
 
-    else if (strcmp(input_buffer, "bearfetch") == 0) {
-                                                                                                                                                       
-                                                                                                                                               
-                                                                                      
+    else if (strcmp(input_buffer, "bearfetch") == 0) {                                                                       
            k_clear_screen();
-
            W_MSG();
     }
     
@@ -3405,7 +3402,6 @@ else if (strcmp(input_buffer, "sniff") == 0) {
         k_printf_center("v2", cursor_y++, BLUE_TXT);
         k_printf_center("Copyright @ 2024-2025", cursor_y++, WHITE_TXT);
         k_printf_center("NopAngel & contributors.", cursor_y++, GRAY_TXT);
-    
     }
 
     else if (strncmp(input_buffer, "print ", 6) == 0) {
@@ -3421,27 +3417,22 @@ else if (strcmp(input_buffer, "sniff") == 0) {
     }
     else if (strncmp(input_buffer, "touch ", 6) == 0) {
         const char *filename = input_buffer + 6;
-  
 	    k_printf("Created new file!", cursor_y++, GREEN_TXT);
         touch(filename, "");
     }
     
     else if (strncmp(input_buffer, "rmfile ", 7) == 0) {
         const char *filename = input_buffer + 7;
-  
-
         rmfile(filename);
     }
     else if (strncmp(input_buffer, "rmdir ", 6) == 0) {
         const char *filename = input_buffer + 6;
- 
-
         rmdir(filename);
     }
     
     else if (strncmp(input_buffer, "cd ", 3) == 0) {
         const char *dirname = input_buffer + 3;
-	cd(dirname);
+	    cd(dirname);
     }
     
    
@@ -3474,7 +3465,7 @@ else if (strcmp(input_buffer, "pwd") == 0) {
         
     }
 
-    k_printf_no_newline("\n", 0, WHITE_TXT);
+  
     } 
 
     
@@ -3762,7 +3753,7 @@ void rtl8139_init(u32 io) {
     }
 }
 
-// 🔍 Search RTL8139 with PCI
+// Search RTL8139 with PCIi
 void pci_scan_for_rtl8139() {
     for (u8 bus = 0; bus < 256; bus++) {
         for (u8 slot = 0; slot < 32; slot++) {
@@ -3847,13 +3838,13 @@ static void play_sound(uint32_t nFrequence) {
 
 void wait(uint32_t ticks) {
     for (volatile uint32_t i = 0; i < ticks * 1000; i++) {
-        // No hacer nada, solo perder tiempo
+        
     }
 }
 
 void beep() {
-    play_sound(1000);  // 1000 Hz = un beep clásico
-    wait(50);          // Ajusta este valor si el beep es muy corto o largo
+    play_sound(1000);  
+    wait(50);         
     nosound();
 }
 
@@ -3885,9 +3876,19 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     current_state = STATE_SHELL;
     
     // create "/etc" without exist
-    if (directory_count == 0 || strcmp(directory_table[0].name, "/etc") != 0) {
-        mkdir("/etc");
+    if (directory_count == 0 || strcmp(directory_table[0].name, "etc") != 0) {
+        mkdir("etc");
     }
+
+    if (directory_count == 0 || strcmp(directory_table[0].name, "tmp") != 0) {
+        mkdir("tmp"); // <- logs, folder.
+    }
+
+    if (directory_count == 0 || strcmp(directory_table[0].name, "mnt") != 0) {
+        mkdir("mnt"); // <- logs, folder.
+    }
+
+    add_log("sda", 12,0);
 
     headerfiles_main();
     k_clear_screen();

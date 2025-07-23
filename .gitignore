@@ -18,6 +18,11 @@ kc.o
 kasm.o
 kernel
 
+
+#errors in the editor
+.*.swp
+*.swp
+
 #editor
 .vimpluggins
 .vimeditor
