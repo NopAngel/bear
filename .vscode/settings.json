@@ -1,0 +1,9 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/media/angel/Disco 2/Work/bear",
+            "binaryPath": "/media/angel/Disco 2/Work/bear/kernel",
+            "binaryArgs": []
+        }
+    ]
+}
