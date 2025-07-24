@@ -5,5 +5,8 @@
             "binaryPath": "/media/angel/Disco 2/Work/bear/kernel",
             "binaryArgs": []
         }
-    ]
+    ],
+    "files.associations": {
+        "typeinfo": "c"
+    }
 }

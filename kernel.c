@@ -1977,6 +1977,261 @@ void list_items() {
     }
 }
 
+void tail(const char *filename) {
+    char content[MAX_CONTENT_LENGTH];
+    int bytes_read = fs_read(filename, content, MAX_CONTENT_LENGTH);
+    
+    if (bytes_read <= 0) {
+        k_printf("File not found or empty", cursor_y++, RED_TXT);
+        return;
+    }
+
+    int line_count = 0;
+    char *ptr = content;
+    while (*ptr) {
+        if (*ptr == '\n') line_count++;
+        ptr++;
+    }
+
+    int start_line = (line_count > 10) ? line_count - 10 : 0;
+    int current_line = 0;
+    ptr = content;
+    
+    k_printf("Last 10 lines of ", cursor_y++, CYAN_TXT);
+    k_printf(filename, cursor_y++, WHITE_TXT);
+    
+    while (*ptr && current_line < start_line) {
+        if (*ptr == '\n') current_line++;
+        ptr++;
+    }
+
+    int display_line = 0;
+    while (*ptr && display_line < 10) {
+        if (*ptr == '\n') {
+            cursor_y++;
+            display_line++;
+        } else if (*ptr >= 32 && *ptr <= 126) {
+            char c = *ptr;
+            k_printf_no_newline(&c, cursor_y, WHITE_TXT);
+        }
+        ptr++;
+    }
+    cursor_y++;
+}
+
+void head(const char *filename) {
+    char content[MAX_CONTENT_LENGTH];
+    int bytes_read = fs_read(filename, content, MAX_CONTENT_LENGTH);
+    
+    if (bytes_read <= 0) {
+        k_printf("File not found or empty", cursor_y++, RED_TXT);
+        return;
+    }
+
+    k_printf("First 10 lines of ", cursor_y++, CYAN_TXT);
+    k_printf(filename, cursor_y++, WHITE_TXT);
+    
+    int lines = 0;
+    char *ptr = content;
+    while (*ptr && lines < 10) {
+        if (*ptr == '\n') {
+            cursor_y++;
+            lines++;
+        } else if (*ptr >= 32 && *ptr <= 126) {
+            char c = *ptr;
+            k_printf_no_newline(&c, cursor_y, WHITE_TXT);
+        }
+        ptr++;
+    }
+    cursor_y++;
+}
+
+void ps() {
+    k_printf("Running Processes:", cursor_y++, CYAN_TXT);
+    k_printf("PID   Name            CPU%   Memory", cursor_y++, WHITE_TXT);
+    k_printf("-----------------------------------", cursor_y++, WHITE_TXT);
+    
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i].pid > 0) {
+            char line[80];
+            char pid_str[10], cpu_str[10], mem_str[10];
+            
+            itoa(process_table[i].pid, pid_str, 10);
+            itoa(process_table[i].cpu_usage, cpu_str, 10);
+            itoa(process_table[i].memory_usage, mem_str, 10);
+            
+            int pos = 0;
+            
+            // PID
+            const char *p = pid_str;
+            while (*p) line[pos++] = *p++;
+            while (pos < 6) line[pos++] = ' ';
+            
+            // Name
+            const char *n = process_table[i].name;
+            while (*n && pos < 22) line[pos++] = *n++;
+            while (pos < 22) line[pos++] = ' ';
+            
+            // CPU%
+            p = cpu_str;
+            while (*p) line[pos++] = *p++;
+            line[pos++] = '%';
+            while (pos < 30) line[pos++] = ' ';
+            
+            // Memory
+            p = mem_str;
+            while (*p) line[pos++] = *p++;
+            line[pos++] = 'K';
+            line[pos++] = 'B';
+            line[pos] = '\0';
+            
+            k_printf(line, cursor_y++, WHITE_TXT);
+        }
+    }
+    cursor_y++;
+}
+
+void uname() {
+    k_printf("BearOS Information:", cursor_y++, CYAN_TXT);
+    k_printf("------------------", cursor_y++, CYAN_TXT);
+    k_printf("Kernel Name: BearOS", cursor_y++, WHITE_TXT);
+    k_printf("Kernel Version: 2.0", cursor_y++, WHITE_TXT);
+    k_printf("Architecture: x86", cursor_y++, WHITE_TXT);
+    k_printf("Author: NopAngel", cursor_y++, WHITE_TXT);
+    k_printf("License: Apache 2.0", cursor_y++, WHITE_TXT);
+    cursor_y++;
+}
+
+
+void find_recursive(const char *dirname, const char *pattern, int *found) {
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (directory_table[i].parent_dir == current_directory && 
+            strcmp(directory_table[i].name, dirname) == 0) {
+            
+            unsigned int saved_dir = current_directory;
+            current_directory = i;
+            
+            for (unsigned int j = 0; j < file_count; j++) {
+                if (strstr(file_table[j].name, pattern) != NULL) {
+                    k_printf(file_table[j].name, cursor_y++, WHITE_TXT);
+                    (*found)++;
+                }
+            }
+            
+            for (unsigned int j = 0; j < directory_count; j++) {
+                if (directory_table[j].parent_dir == current_directory) {
+                    find_recursive(directory_table[j].name, pattern, found);
+                }
+            }
+            
+            current_directory = saved_dir;
+            return;
+        }
+    }
+}
+
+void find(const char *pattern) {
+    int found = 0;
+    k_printf("Searching for: ", cursor_y++, CYAN_TXT);
+    k_printf(pattern, cursor_y++, WHITE_TXT);
+    k_printf("Results:", cursor_y++, CYAN_TXT);
+    
+    // Search in current directory first
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (strstr(file_table[i].name, pattern) != NULL) {
+            k_printf(file_table[i].name, cursor_y++, WHITE_TXT);
+            found++;
+        }
+    }
+    
+    // Search in subdirectories
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (directory_table[i].parent_dir == current_directory) {
+            find_recursive(directory_table[i].name, pattern, &found);
+        }
+    }
+    
+    if (found == 0) {
+        k_printf("No files found", cursor_y++, RED_TXT);
+    }
+    cursor_y++;
+}
+
+
+
+
+void print_tree_recursive(unsigned int dir_id, int depth, int *line_counter) {
+    char indent[80] = {0};
+    for (int i = 0; i < depth; i++) {
+        strcat(indent, "|   ");
+    }
+    
+    // Print current directory
+    char dir_line[100];
+    strcpy(dir_line, indent);
+    strcat(dir_line, "+-- ");
+    strcat(dir_line, directory_table[dir_id].name);
+    strcat(dir_line, "/");
+    k_printf(dir_line, (*line_counter)++, BLUE_TXT);
+    
+    // Save current directory to restore later
+    unsigned int saved_dir = current_directory;
+    current_directory = dir_id;
+    
+    // Print files in this directory
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (file_table[i].start_block / 16 == dir_id) {  // Check if file belongs to this directory
+            char file_line[100];
+            strcpy(file_line, indent);
+            strcat(file_line, "|   +-- ");
+            strcat(file_line, file_table[i].name);
+            k_printf(file_line, (*line_counter)++, WHITE_TXT);
+            
+            // Check if we're running out of screen space
+            if (*line_counter >= SCREEN_ROWS - 2) {
+                k_printf("-- More -- (Press any key to continue)", (*line_counter)++, YELLOW_TXT);
+                get_char(); // Wait for user input
+                *line_counter = 0; // Reset counter
+                k_clear_screen();
+            }
+        }
+    }
+    
+    // Recursively print subdirectories
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (directory_table[i].parent_dir == current_directory) {
+            print_tree_recursive(i, depth + 1, line_counter);
+        }
+    }
+    
+    // Restore current directory
+    current_directory = saved_dir;
+}
+
+void tree() {
+    if (directory_count == 0 && file_count == 0) {
+        k_printf("No files or directories", cursor_y++, RED_TXT);
+        return;
+    }
+    
+    int line_counter = cursor_y;
+    k_printf("Directory tree:", line_counter++, CYAN_TXT);
+    
+    // Start from root directory (assuming root has ID 0)
+    print_tree_recursive(0, 0, &line_counter);
+    
+    // Reset cursor position for new input
+    cursor_y = line_counter + 1;
+    cursor_x = 0;
+    
+    // Clear input buffer
+    input_index = 0;
+    memset(input_buffer, 0, INPUT_BUFFER_SIZE);
+    
+    // Redraw prompt
+    k_printf("root@bear:~$ ", cursor_y, WHITE_TXT);
+    cursor_y++;
+}
 
 
 
@@ -3191,6 +3446,27 @@ void process_input() {
     }
     else if (strcmp(input_buffer, "usrcreate") == 0) {
         usrcreate();
+    }
+    else if (strncmp(input_buffer, "tail ", 5) == 0) {
+        const char *filename = input_buffer + 5;
+        tail(filename);
+    }
+    else if (strncmp(input_buffer, "head ", 5) == 0) {
+        const char *filename = input_buffer + 5;
+        head(filename);
+    }
+    else if (strcmp(input_buffer, "uname") == 0) {
+        uname();
+    }
+    else if (strcmp(input_buffer, "ps") == 0) {
+        ps();
+    }
+    else if (strncmp(input_buffer, "find ", 5) == 0) {
+        const char *pattern = input_buffer + 5;
+        find(pattern);
+    }
+    else if (strcmp(input_buffer, "tree") == 0) {
+        tree();
     }
     else if (strncmp(input_buffer, "beardog install ", 16) == 0) {
         beardog_install(input_buffer + 16);
