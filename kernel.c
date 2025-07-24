@@ -537,7 +537,6 @@ void add_log(const char *message, unsigned int timestamp, LogLevel level) {
     custom_strcpy(log_buffer[log_index].message, message);
 
     log_index = (log_index + 1) % MAX_LOG_ENTRIES;  
-    fs_read(*message, message, 10);
 }
 
 
@@ -3852,13 +3851,7 @@ void beep() {
 
 
 
-
-
-
-
-
-
-
+// HEADERFILES NEED's for BearOSsssss
 
 void headerfiles_main() {
     mkdir("qpb");
@@ -3866,7 +3859,7 @@ void headerfiles_main() {
     touch("GUIDE.md", "Hello!");
 }
 
-
+// ==========================================
 
 
 
@@ -3887,8 +3880,7 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     if (directory_count == 0 || strcmp(directory_table[0].name, "mnt") != 0) {
         mkdir("mnt"); // <- logs, folder.
     }
-
-    add_log("sda", 12,0);
+    
 
     headerfiles_main();
     k_clear_screen();
