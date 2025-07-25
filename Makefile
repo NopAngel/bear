@@ -19,7 +19,7 @@ GPP=g++
 NSM=nasm
 FLAGC=-m32 -fno-stack-protector -c
 LDFLAG=-m elf_i386 -T link.ld -o $(KERNEL_BIN)
-LDPATH=kasm.o sound_blaster.o xq.o delay.o pnp.o kc.o k_print.o reboot.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o
+LDPATH=kasm.o sound_blaster.o xq.o delay.o memfs.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
 
 VG ?= std
 NET ?= user
@@ -47,12 +47,17 @@ compile:
 	$(GPP) $(GPP_FLAGS_RTTI) ports/serial_ports.cpp -o xq.o
 	
 	$(CC) $(FLAGC) kernel.c -o kc.o
+	$(CC) $(FLAGC) fs/text_draw.c -o textdraw.o
 	$(CC) $(FLAGC) fs/k_printf.c -o k_print.o
+	$(CC) $(FLAGC) include/bear/module.c -o module.o
+	$(CC) $(FLAGC) include/bear/notify/notification_system.c -o notify.o
+	$(CC) $(FLAGC) include/wlcm/crw.c -o crw.o
 	$(CC) $(FLAGC) include/delay/delay.c -o delay.o
 	$(CC) $(FLAGC) reboot.c -o reboot.o
 	$(CC) $(FLAGC) shutdown.c -o shutdown.o
 	$(CC) $(FLAGC) panic/panic.c -o panic.o
 	$(CC) $(FLAGC) include/drivers/vesa/vesa.c -o vesa.o
+	$(CC) $(FLAGC) include/memfs/memfs.c -o memfs.o
 	$(CC) $(FLAGC) include/itoa.c -o itoa.o
 	$(CC) $(FLAGC) cpu/get_cpu_info.c -o cpu_info.o
 	$(CC) $(FLAGC) include/memory/sharedmemory.c -o sharedmemory.o
@@ -61,6 +66,7 @@ compile:
 	$(CC) $(FLAGC) include/drivers/ps2/drv.c -o drv.o
 	$(CC) $(FLAGC) ./rtc.c -o rtc.o
 	$(CC) $(FLAGC) fs/k_printf_xy.c -o krpzq.o
+	$(CC) $(FLAGC) include/io/global.c -o globalll.o
 	ld $(LDFLAG) $(LDPATH)
 iso: compile
 	mkdir -p $(GRUB_FODLER)

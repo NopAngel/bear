@@ -7,6 +7,11 @@
         }
     ],
     "files.associations": {
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "vesa.h": "c",
+        "info.h": "c",
+        "module.h": "c",
+        "manager.h": "c",
+        "tvfs.h": "c"
     }
 }

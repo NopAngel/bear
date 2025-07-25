@@ -8,10 +8,11 @@
 */
 
 
-#ifndef KERNEL_PANIC_H
-#define KERNEL_PANIC_H
+#ifndef BEARPANIC_H
+#define BEARPANIC_H
 
-#include "../fs/k_printf.h"
-unsigned int kernelPanic(const char** reasons);
+#include "../fs/text_draw.h"
+
+void bear_panic(const char *msg);
 
 #endif

@@ -18,29 +18,6 @@
 
 
 
-int memfs_open(const char *path, int flags) {
-    if (path[0] == '/' && path[1] == 'm' && path[2] == 'n')
-        return 0; 
-    return -1;
-}
-
-int memfs_close(int fd) {
-    return 0;
-}
-
-
-
-int memfs_read(int fd, void *buf, unsigned int count) {
-    const char *fake = "Desde memfs.";
-    unsigned int i;
-    for (i = 0; i < count && fake[i]; i++)
-        ((char*)buf)[i] = fake[i];
-    return i;
-}
-
-int memfs_write(int fd, const void *buf, unsigned int count) {
-    return count; 
-}
 
 
 
@@ -83,6 +60,37 @@ void k_clear_screen();
 #include "./rtc.h"
 #include "fs/k_printf_xy.h"
 #include "include/delay/delay.h"
+#include "include/memfs/memfs.h" 
+#include "include/colors.h"
+#include "include/keyboard.h"
+#include "include/disk.h"
+#include "include/INFO.h"
+#include "include/io/global.h"
+#include "fs/text_draw.h"
+#include "panic/panic.h"
+#include "include/bear/module.h"
+#include "include/bear/notify/notification_system.h"
+
+
+static inline void outb(unsigned short port, unsigned char value) {
+    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static inline void outl(unsigned short port, unsigned int value) {
+    asm volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static inline unsigned int inl(unsigned short port) {
+    unsigned int value;
+    asm volatile ("inl %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
+static inline unsigned char inb(unsigned short port) {
+    unsigned char value;
+    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
 
 
 
@@ -109,13 +117,6 @@ typedef unsigned long long uint64_t;
 
 
 
-#define VIDEO_MEMORY ((unsigned short*)0xB8000)
-#define SCREEN_WIDTH 80
-
-void text_draw(int x, int y, char c, unsigned char color) {
-    unsigned short attribute = ((unsigned short)color << 8) | c;
-    VIDEO_MEMORY[y * SCREEN_WIDTH + x] = attribute;
-}
 
 
 #define NULL ((void*)0)  
@@ -132,21 +133,6 @@ void init_shared_memory();
 
 #define SOUND_COMMAND_PORT 0x388 
 #define SOUND_DATA_PORT 0x389    
-
-
-static inline void outb(unsigned short port, unsigned char value) {
-    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
-}
-
-static inline void outl(unsigned short port, unsigned int value) {
-    asm volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
-}
-
-static inline unsigned int inl(unsigned short port) {
-    unsigned int value;
-    asm volatile ("inl %1, %0" : "=a"(value) : "Nd"(port));
-    return value;
-}
 
 
 void sound_init() {
@@ -186,141 +172,12 @@ void stop_tone() {
 
 
 
-#include "include/colors.h"
-#include "include/keyboard.h"
-#include "include/disk.h"
-#include "include/INFO.h"
-static inline unsigned char inb(unsigned short port) {
-    unsigned char value;
-    asm volatile ("inb %1, %0" : "=a"(value) : "Nd"(port));
-    return value;
-}
-
-
-void bear_panic(const char *msg) {
-    
-    for (int y = 0; y < 25; y++) {
-        for (int x = 0; x < 80; x++)
-            text_draw(x, y, ' ', 0x4C);  
-    }
-    const char *header = "PANIC ERROR ";
-    int x = (80 - 18) / 2;
-    for (int i = 0; header[i]; i++)
-        text_draw(x + i, 5, header[i], 0x47);  
-
-    int y = 8;
-    for (int i = 0; msg[i] && y < 24; i++) {
-        text_draw((i % 60) + 10, y, msg[i], 0x47); 
-        if (i % 60 == 59) y++;
-    }
-
-    
-    while (1) {
-        __asm__ volatile ("hlt");
-    }
-}
-
-
 
 
 
 // BEAR INSTALL FNC
 
 
-
-void CR_W() {
-	k_clear_screen();
-	k_printf("[BEAR] Bear packs loading",0, GREEN_TXT);
-    delay(10);
-    k_printf("[BEAR] Bear packs loaded.",0, GREEN_TXT);
-
-	k_printf("[BEAR] Init scripts",1, GREEN_TXT);
-
-
-	k_printf("[BEAR] APM Manager inited",2, GREEN_TXT);
-
-
-	k_printf("[BEAR] Terminal preparing",3, GREEN_TXT);
-    delay(10);
-    k_printf("[BEAR] Terminal prepared.",3, GREEN_TXT);
-
-
-	k_printf("[BEAR] Keyboard port inited",4, GREEN_TXT);
-    delay(10);
-
-	k_printf("[BEAR] Sound inited port",5, GREEN_TXT);
-
-
-	k_printf("[BEAR] VGA Resolution PREPARED",6, GREEN_TXT);
-    delay(10);
-    k_printf("[BEAR] VGA Resolution PREPARED",6, GREEN_TXT);
-
-
-	k_printf("[BEAR] Keyboard Scanned loading",7, GREEN_TXT);
-    delay(10);
-    k_printf("[BEAR] Keyboard Scanned loaded.",7, GREEN_TXT);
-
-
-	k_printf("[BEAR] Commands PREPARING",8, GREEN_TXT);
-    delay(10);
-    k_printf("[BEAR] Commands PREPARED..",8, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Drivers PREPARING..",9, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Drivers PREPARED..",10, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Disk method PREPARING",11, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Disk method PREPARED..",12, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] PCI Devices PREPARING",13, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] PCI Devices PREPARED..",14, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Colors loading",15, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Colors loaded..",16, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Optimization PREPARING",17, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Optimization PREPARED..",18, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Itoa PREPARING",19, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] Itoa PREPARED..",20, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] SOUND DRVIER PREPARED",21, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] SOUND DRIVER PREPARING..",22, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] INFORMATION PREPARING",23, GREEN_TXT);
-    delay(10);
-
-    k_printf("[BEAR] INFORMATION PREPARED..",24, GREEN_TXT);
-    delay(10);
-
-
-	k_printf("-----------------------------------",25, WHITE_TXT);
-    k_clear_screen();
-	delay(10);
-	k_clear_screen();
-    k_printf_center("BearOS starting - Author: NopAngel", 12, ORANGE_TXT);
-}
 
 #define CONFIG_ADDRESS 0xCF8
 #define CONFIG_DATA 0xCFC
@@ -369,7 +226,7 @@ void W_MSG() {
     k_printf("root@bear", 0, WHITE_TXT);
     k_printf("---------", 1, WHITE_TXT);
     k_printf("OS: BearOS x86 (KERNEL)", 2, WHITE_TXT);
-    k_printf("Shell: bash_bear x86_a6", 3, WHITE_TXT);
+    k_printf("Shell: bash_bear x86_64", 3, WHITE_TXT);
     k_printf("FileSystem: FAT32 (default)", 4, WHITE_TXT);
     
     // COLORS in TEXT.
@@ -392,81 +249,6 @@ void W_MSG() {
 
 volatile unsigned char current_bg_color = BLACK_BG;
 
-
-
-int strlen(const char *str) {
-    int length = 0;
-    while (*str != '\0') {
-        length++;
-        str++;
-    }
-    return length;
-}
-
-
-int strcmp(const char *str1, const char *str2) {
-    while (*str1 && (*str1 == *str2)) {
-        str1++;
-        str2++;
-    }
-    return *(unsigned char *)str1 - *(unsigned char *)str2;
-}
-
-
-
-
-int strncmp(const char *str1, const char *str2, unsigned int n) {
-    while (n && *str1 && (*str1 == *str2)) {
-        str1++;
-        str2++;
-        n--;
-    }
-    if (n == 0) {
-        return 0; 
-    }
-    return *(unsigned char *)str1 - *(unsigned char *)str2;
-}
-
-int custom_strcmp(const char *str1, const char *str2) {
-    while (*str1 && (*str1 == *str2)) {
-        str1++;
-        str2++;
-    }
-    return *(unsigned char *)str1 - *(unsigned char *)str2;
-}
-
-
-char* find_char(char* str, char c) {
-    while (*str) {
-        if (*str == c) return str;
-        str++;
-    }
-    return 0;
-}
-
-
-
-
-char *custom_strcpy(char *dest, const char *src) {
-    char *dest_start = dest;
-    while (*src != '\0') {
-        *dest = *src;
-        dest++;
-        src++;
-    }
-    *dest = '\0'; 
-    return dest_start;
-}
-char *strcpy(char *dest, const char *src) {
-    char *dest_start = dest;
-    while (*src != '\0') {
-        *dest = *src;
-        dest++;
-        src++;
-    }
-    *dest = '\0'; 
-    return dest_start;
-}
 
 
 
@@ -763,6 +545,37 @@ int touch(const char *filename, const char *content) {
     return 0;
 }
 
+
+int mkdir(const char *dirname) {
+
+    if (directory_count >= MAX_DIRECTORIES) {
+        k_printf("Error: No more directories can be created", 0, RED_TXT);
+        return -1;
+    }
+
+
+    if (strlen(dirname) >= MAX_NAME_LENGTH) {
+        k_printf("Error: The name is long.", 0, RED_TXT);
+        return -1;
+    }
+
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (strcmp(directory_table[i].name, dirname) == 0) {
+            k_printf("Error: The directory already exists.", 0, RED_TXT);
+            return -1;
+        }
+    }
+
+ 
+    strcpy(directory_table[directory_count].name, dirname); 
+    directory_table[directory_count].start_block = directory_count * 16; 
+    directory_table[directory_count].size = 1; 
+    directory_count++; 
+
+    k_printf("Directory's created.", cursor_y++, GREEN_TXT);
+    return 0;
+}
+
 int rmfile(const char *filename) {
 	remove_file(filename);
 	return 0;
@@ -1054,41 +867,12 @@ void bearsh_interpret(const char *filename) {
 
 
 
-int mkdir(const char *dirname) {
-
-    if (directory_count >= MAX_DIRECTORIES) {
-        k_printf("Error: No more directories can be created", 0, RED_TXT);
-        return -1;
-    }
-
-
-    if (strlen(dirname) >= MAX_NAME_LENGTH) {
-        k_printf("Error: The name is long.", 0, RED_TXT);
-        return -1;
-    }
-
-    for (unsigned int i = 0; i < directory_count; i++) {
-        if (strcmp(directory_table[i].name, dirname) == 0) {
-            k_printf("Error: The directory already exists.", 0, RED_TXT);
-            return -1;
-        }
-    }
-
- 
-    strcpy(directory_table[directory_count].name, dirname); 
-    directory_table[directory_count].start_block = directory_count * 16; 
-    directory_table[directory_count].size = 1; 
-    directory_count++; 
-
-    k_printf("Directory's created.", cursor_y++, GREEN_TXT);
-    return 0;
-}
 
 
 
 int rmdir(const char *dirname) {
     if (directory_count == 0) {
-        k_printf("Error: No directories exist.", 0, RED_TXT);
+        k_printf("Error: No directories exist.           ", cursor_y++, RED_TXT);
         return -1;
     }
 
@@ -1101,15 +885,15 @@ int rmdir(const char *dirname) {
             
             directory_count--; 
             
-            k_printf("Directory removed: ", 0, GREEN_TXT);
-            k_printf_no_newline(dirname, 0, WHITE_TXT);
+            k_printf("Directory removed: ", cursor_y++, GREEN_TXT);
+            k_printf_no_newline(dirname, cursor_y++, WHITE_TXT);
 
 
             return 0;
         }
     }
 
-    k_printf("Error: Directory not found", 0, RED_TXT);
+    k_printf("Error: Directory not found", cursor_y++, RED_TXT);
     return -1;
 }
 
@@ -1919,60 +1703,54 @@ void show_command_history() {
 
 
 void lsk_itm() {
-    k_clear_screen();
-    cursor_y = 0;
+    k_printf(".                      ", cursor_y++, BLUE_TXT);
+    k_printf("..                     ", cursor_y++, BLUE_TXT);
     k_printf("----------------------------------", cursor_y++, ORANGE_TXT);
 
     int y_pos = 3;
     
     for (unsigned int i = 0; i < directory_count; i++) {
         if (directory_table[i].parent_dir == current_directory) {
-            k_printf_xy("./", 0, y_pos, BLUE_TXT);
-            k_printf_xy(directory_table[i].name, 2, y_pos, BLUE_TXT);
-            k_printf_xy("[DIR]", 30, y_pos++, GRAY_TXT);
+            k_printf_xy("./", 0, cursor_y, BLUE_TXT);
+            k_printf_xy(directory_table[i].name, 2, cursor_y, BLUE_TXT);
+            k_printf_xy("[DIR]", 30, cursor_y++, GRAY_TXT);
         }
     }
 
 
     if (file_count > 0) {
         for (unsigned int i = 0; i < file_count; i++) {
-            k_printf_xy(file_table[i].name, 2, y_pos, GRAY_TXT);
-            k_printf_xy("[FILE]", 30, y_pos++, GRAY_TXT);
+            k_printf_xy(file_table[i].name, 2, cursor_y, GRAY_TXT);
+            k_printf_xy("[FILE]", 30, cursor_y++, GRAY_TXT);
 
         }
     }
 
-    k_printf("----------------------------------", y_pos++, ORANGE_TXT);
-    cursor_y+=y_pos;
+    k_printf("----------------------------------", cursor_y++, ORANGE_TXT);
+
 }
 
 
 void list_items() {
-    int cursor_y = 0;
-
-
+    k_printf(".", cursor_y++, BLUE_TXT);
+    k_printf("..", cursor_y++, BLUE_TXT);
     if (directory_count > 0) {
-        k_printf("Directory's:", cursor_y++, BLUE_TXT);
         for (unsigned int i = 0; i < directory_count; i++) {
-            k_printf_no_newline("  - ", cursor_y++, WHITE_TXT);
-            k_printf(directory_table[i].name, cursor_y++, WHITE_TXT);
+            k_printf(directory_table[i].name, cursor_y++, BLUE_TXT);
         }
     }
-    cursor_y = cursor_y + 2;
 
 
     if (file_count > 0) {
-        k_printf("File's:", cursor_y++, GREEN_TXT);
         for (unsigned int i = 0; i < file_count; i++) {
-            k_printf("  - ", cursor_y++, WHITE_TXT);
-            k_printf(file_table[i].name, cursor_y++, WHITE_TXT);
+            k_printf(file_table[i].name, cursor_y++, GRAY_TXT);
 
         }
     }
 
 
     if (directory_count == 0 && file_count == 0) {
-        k_printf("No content.", 1, WHITE_TXT);
+        k_printf("No content.", cursor_y++, RED_TXT);
 
     }
 }
@@ -2159,79 +1937,6 @@ void find(const char *pattern) {
 
 
 
-
-void print_tree_recursive(unsigned int dir_id, int depth, int *line_counter) {
-    char indent[80] = {0};
-    for (int i = 0; i < depth; i++) {
-        strcat(indent, "|   ");
-    }
-    
-    // Print current directory
-    char dir_line[100];
-    strcpy(dir_line, indent);
-    strcat(dir_line, "+-- ");
-    strcat(dir_line, directory_table[dir_id].name);
-    strcat(dir_line, "/");
-    k_printf(dir_line, (*line_counter)++, BLUE_TXT);
-    
-    // Save current directory to restore later
-    unsigned int saved_dir = current_directory;
-    current_directory = dir_id;
-    
-    // Print files in this directory
-    for (unsigned int i = 0; i < file_count; i++) {
-        if (file_table[i].start_block / 16 == dir_id) {  // Check if file belongs to this directory
-            char file_line[100];
-            strcpy(file_line, indent);
-            strcat(file_line, "|   +-- ");
-            strcat(file_line, file_table[i].name);
-            k_printf(file_line, (*line_counter)++, WHITE_TXT);
-            
-            // Check if we're running out of screen space
-            if (*line_counter >= SCREEN_ROWS - 2) {
-                k_printf("-- More -- (Press any key to continue)", (*line_counter)++, YELLOW_TXT);
-                get_char(); // Wait for user input
-                *line_counter = 0; // Reset counter
-                k_clear_screen();
-            }
-        }
-    }
-    
-    // Recursively print subdirectories
-    for (unsigned int i = 0; i < directory_count; i++) {
-        if (directory_table[i].parent_dir == current_directory) {
-            print_tree_recursive(i, depth + 1, line_counter);
-        }
-    }
-    
-    // Restore current directory
-    current_directory = saved_dir;
-}
-
-void tree() {
-    if (directory_count == 0 && file_count == 0) {
-        k_printf("No files or directories", cursor_y++, RED_TXT);
-        return;
-    }
-    
-    int line_counter = cursor_y;
-    k_printf("Directory tree:", line_counter++, CYAN_TXT);
-    
-    // Start from root directory (assuming root has ID 0)
-    print_tree_recursive(0, 0, &line_counter);
-    
-    // Reset cursor position for new input
-    cursor_y = line_counter + 1;
-    cursor_x = 0;
-    
-    // Clear input buffer
-    input_index = 0;
-    memset(input_buffer, 0, INPUT_BUFFER_SIZE);
-    
-    // Redraw prompt
-    k_printf("root@bear:~$ ", cursor_y, WHITE_TXT);
-    cursor_y++;
-}
 
 
 
@@ -2778,7 +2483,7 @@ void save_user_to_disk(UserEntry *user) {
     // save in /etc/passwd
     fs_write("/etc/passwd", entry, pos);
     mkdir("cfg");
-    fs_write("/cfg/global.bearcfg", "GLOBAL_end=DEFAULT", 10);
+    fs_write("/cfg/global.conf", "GLOBAL_end=DEFAULT", 10);
     mkdir("home");
 }
 
@@ -2813,7 +2518,7 @@ void bearinstall_create_user(void) {
     current_user.uid = 1000 + user_count;
     
 
-    const char *home_pref = "/home/";
+    const char *home_pref = "home/";
     char *dest_ptr = current_user.home_dir;
     
     
@@ -3012,7 +2717,7 @@ void usrcreate(void) {
     new_user.is_admin = 0;
     
 
-    const char *home_pref = "/home/";
+    const char *home_pref = "home/";
     char *h_ptr = new_user.home_dir;
     while (*home_pref) *h_ptr++ = *home_pref++;
     const char *uname = new_user.username;
@@ -3257,7 +2962,6 @@ void vfs_list_mountpoints() {
 
 
 
-
 unsigned int get_ram_size() {
     unsigned int ram_size = 0x100000; 
     return ram_size / 1024; 
@@ -3308,58 +3012,6 @@ void display_stats() {
 
 
 
-// FONT's System.
-
-typedef unsigned char  u8;
-typedef unsigned int   u32;
-
-
-u32* framebuffer = (u32*)0xE0000000;
-u32 screen_width = 1024;
-u32 screen_height = 768;
-
-u8 font_default[] = {
-    
-};
-
-
-void put_pixel(u32 x, u32 y, u32 color) {
-    if (x < screen_width && y < screen_height) {
-        framebuffer[y * screen_width + x] = color;
-    }
-}
-
-
-void draw_char(int x, int y, char c, int scale, u32 color) {
-    int index = (int)c * 16; 
-    for (int row = 0; row < 16; row++) {
-        u8 row_data = font_default[index + row];
-        for (int col = 0; col < 8; col++) {
-            if (row_data & (1 << (7 - col))) {
-                for (int dy = 0; dy < scale; dy++) {
-                    for (int dx = 0; dx < scale; dx++) {
-                        put_pixel(x + col * scale + dx, y + row * scale + dy, color);
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-void draw_text(int x, int y, const char* text, int scale, u32 color) {
-    int orig_x = x;
-    while (*text) {
-        if (*text == '\n') {
-            x = orig_x;
-            y += 16 * scale;
-        } else {
-            draw_char(x, y, *text, scale, color);
-            x += 8 * scale;
-        }
-        text++;
-    }
-}
 
 
 
@@ -3435,8 +3087,7 @@ void process_input() {
 
 
     if (strcmp(input_buffer, "test") == 0) {
-        k_printf("Hello, World!", cursor_y, GREEN_TXT); 
-        cursor_y++;
+        k_printf("Hello, World!", cursor_y++, GREEN_TXT); 
     } 
     else if (strcmp(input_buffer, "bearinstall") == 0) {
         current_state = STATE_BEARINSTALL;
@@ -3464,9 +3115,6 @@ void process_input() {
     else if (strncmp(input_buffer, "find ", 5) == 0) {
         const char *pattern = input_buffer + 5;
         find(pattern);
-    }
-    else if (strcmp(input_buffer, "tree") == 0) {
-        tree();
     }
     else if (strncmp(input_buffer, "beardog install ", 16) == 0) {
         beardog_install(input_buffer + 16);
@@ -3573,10 +3221,6 @@ void process_input() {
 
     } else if (strcmp(input_buffer, "denreboot") == 0) {
         denreboot();
-    } else if (strncmp(input_buffer, "view ", 5) == 0) {
-        cursor_y = cursor_y + 1;
-     	const char *filename = input_buffer + 5;
-    	view_file(filename);
     }
     else if (strncmp(input_buffer, "svcmd ", 6) == 0) {
         cursor_y = cursor_y + 1;
@@ -3712,8 +3356,7 @@ else if (strcmp(input_buffer, "sniff") == 0) {
     
    
     else if (strcmp(input_buffer, "ls") == 0) {
-        k_clear_screen();
-        cursor_y = 20;
+        cursor_y = cursor_y + 1;
         list_items();
     }
     
@@ -3746,10 +3389,15 @@ else if (strcmp(input_buffer, "pwd") == 0) {
     
 
    
-     else if (strcmp(input_buffer, "clear") == 0) {
+    else if (strcmp(input_buffer, "clear") == 0) {
         k_clear_screen();
         cursor_y = 0; 
     }
+
+    else if (strcmp(input_buffer, "") == 0) {
+        cursor_y++;
+    }
+
      else {
         k_printf("Command not found.", cursor_y++, RED_TXT); 
     }
@@ -4131,7 +3779,7 @@ void beep() {
 
 void headerfiles_main() {
     mkdir("qpb");
-    touch("global.bearcfg", "NORMAL");
+    touch("global.conf", "NORMAL");
     touch("GUIDE.md", "Hello!");
 }
 
@@ -4139,11 +3787,13 @@ void headerfiles_main() {
 
 
 
+
+
+
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
 {
     user_count = 0;
     current_state = STATE_SHELL;
-    
     // create "/etc" without exist
     if (directory_count == 0 || strcmp(directory_table[0].name, "etc") != 0) {
         mkdir("etc");
@@ -4156,16 +3806,20 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     if (directory_count == 0 || strcmp(directory_table[0].name, "mnt") != 0) {
         mkdir("mnt"); // <- logs, folder.
     }
-    
 
     headerfiles_main();
+
+    // starteddddd
+
+
     k_clear_screen();
     CR_W();
     delay(80);
     W_MSG();
     
     current_state = STATE_SHELL;
-    
+  
+
 
     vfs_init();
     
