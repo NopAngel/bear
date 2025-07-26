@@ -29,7 +29,7 @@
 #define GREEN_TXT_BG 0x22
 #define PURPLE_TXT_BG 0x77
 #define PINK_TXT_BG 0x55
-
+#define CYAN_TXT 3  
 
 // DEFINE BACKGROUND COLORS.
 

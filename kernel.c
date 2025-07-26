@@ -14,9 +14,33 @@
 //this OS can be improved 1,000%, but I don't really care that much. The code is going to stay like this for a while, 
 // because it does its job, it'll be fast, it'll work well, and nothing else. I just wanted to put this out there.
 
-#define CYAN_TXT 3  
 
 
+#include "fs/k_printf.h"
+#include "fs/k_printf_noline.h"
+#include "reboot.h"
+#include "include/multiboot.h"
+#include "shutdown.h"
+#include "include/itoa.h"
+#include "cpu/get_cpu_info.h"
+#include "include/memory/sharedmemory.h"
+#include "include/drivers/vesa/vesa.h"
+#include "include/drivers/mouse/mouse.h"
+#include "include/drivers/ps2/drv.h"
+#include "./rtc.h"
+#include "fs/k_printf_xy.h"
+#include "include/delay/delay.h"
+#include "include/memfs/memfs.h" 
+#include "include/colors.h"
+#include "include/keyboard.h"
+#include "include/disk.h"
+#include "include/INFO.h"
+#include "include/io/global.h"
+#include "fs/text_draw.h"
+#include "panic/panic.h"
+#include "include/bear/module.h"
+#include "include/bear/notify/notification_system.h"
+#include "include/uname.h"
 
 
 
@@ -45,31 +69,6 @@ int input_index = 0;
 volatile unsigned char last_scancode = 0;
 
 int logged = 1;
-void k_clear_screen();
-#include "fs/k_printf.h"
-#include "fs/k_printf_noline.h"
-#include "reboot.h"
-#include "include/multiboot.h"
-#include "shutdown.h"
-#include "include/itoa.h"
-#include "cpu/get_cpu_info.h"
-#include "include/memory/sharedmemory.h"
-#include "include/drivers/vesa/vesa.h"
-#include "include/drivers/mouse/mouse.h"
-#include "include/drivers/ps2/drv.h"
-#include "./rtc.h"
-#include "fs/k_printf_xy.h"
-#include "include/delay/delay.h"
-#include "include/memfs/memfs.h" 
-#include "include/colors.h"
-#include "include/keyboard.h"
-#include "include/disk.h"
-#include "include/INFO.h"
-#include "include/io/global.h"
-#include "fs/text_draw.h"
-#include "panic/panic.h"
-#include "include/bear/module.h"
-#include "include/bear/notify/notification_system.h"
 
 
 static inline void outb(unsigned short port, unsigned char value) {
@@ -220,30 +219,6 @@ void cmd_uptime() {
 
 
 
-
-void W_MSG() {
-    k_clear_screen();
-    k_printf("root@bear", 0, WHITE_TXT);
-    k_printf("---------", 1, WHITE_TXT);
-    k_printf("OS: BearOS x86 (KERNEL)", 2, WHITE_TXT);
-    k_printf("Shell: bash_bear x86_64", 3, WHITE_TXT);
-    k_printf("FileSystem: FAT32 (default)", 4, WHITE_TXT);
-    
-    // COLORS in TEXT.
-    
-    k_printf_xy("OS",0, 2, RED_TXT);
-    k_printf_xy("Shell",0, 3, RED_TXT);
-    k_printf_xy("FileSystem",0, 4, RED_TXT);
-    
-    k_printf_xy("  ", 6,6, BLACK_BG);
-    k_printf_xy("  ", 8,6, GRAY_BG);
-    k_printf_xy("  ", 10,6, RED_BG);
-    k_printf_xy("  ", 12,6, ORANGE_BG);
-    k_printf_xy("  ", 14,6, PINK_BG);
-   
-
-    
-}
 
 
 
@@ -774,11 +749,6 @@ char* strcat(char *dest, const char *src) {
     return dest;
 }
 
-
-
-
-
-void W_MSG();
 
 
 char* strtok(char* str, const char* delimiters) {
@@ -1869,16 +1839,6 @@ void ps() {
     cursor_y++;
 }
 
-void uname() {
-    k_printf("BearOS Information:", cursor_y++, CYAN_TXT);
-    k_printf("------------------", cursor_y++, CYAN_TXT);
-    k_printf("Kernel Name: BearOS", cursor_y++, WHITE_TXT);
-    k_printf("Kernel Version: 2.0", cursor_y++, WHITE_TXT);
-    k_printf("Architecture: x86", cursor_y++, WHITE_TXT);
-    k_printf("Author: NopAngel", cursor_y++, WHITE_TXT);
-    k_printf("License: Apache 2.0", cursor_y++, WHITE_TXT);
-    cursor_y++;
-}
 
 
 void find_recursive(const char *dirname, const char *pattern, int *found) {

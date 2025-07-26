@@ -19,7 +19,7 @@ GPP=g++
 NSM=nasm
 FLAGC=-m32 -fno-stack-protector -c
 LDFLAG=-m elf_i386 -T link.ld -o $(KERNEL_BIN)
-LDPATH=kasm.o sound_blaster.o xq.o delay.o memfs.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
+LDPATH=kasm.o sound_blaster.o xq.o delay.o memfs.o uname.o wmsg.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
 
 VG ?= std
 NET ?= user
@@ -49,11 +49,13 @@ compile:
 	$(CC) $(FLAGC) kernel.c -o kc.o
 	$(CC) $(FLAGC) fs/text_draw.c -o textdraw.o
 	$(CC) $(FLAGC) fs/k_printf.c -o k_print.o
+	$(CC) $(FLAGC) include/wlcm/wmsg.c -o wmsg.o
 	$(CC) $(FLAGC) include/bear/module.c -o module.o
 	$(CC) $(FLAGC) include/bear/notify/notification_system.c -o notify.o
 	$(CC) $(FLAGC) include/wlcm/crw.c -o crw.o
 	$(CC) $(FLAGC) include/delay/delay.c -o delay.o
 	$(CC) $(FLAGC) reboot.c -o reboot.o
+	$(CC) $(FLAGC) include/uname.c -o uname.o
 	$(CC) $(FLAGC) shutdown.c -o shutdown.o
 	$(CC) $(FLAGC) panic/panic.c -o panic.o
 	$(CC) $(FLAGC) include/drivers/vesa/vesa.c -o vesa.o
@@ -91,7 +93,7 @@ menuinstall:
 
 rm_q: # remove all files (.iso, .o)
 	rm -rf *.o *.iso *.img kernel kernel.elf *.tmp 
-	echo "Makefile> Deleted files trash!"
+	@echo "Makefile> Deleted files trash!"
 
 
 

@@ -12,6 +12,10 @@
         "info.h": "c",
         "module.h": "c",
         "manager.h": "c",
-        "tvfs.h": "c"
+        "tvfs.h": "c",
+        "clear_screen.h": "c",
+        "k_printf.h": "c",
+        "uname.h": "c",
+        "notification_system.h": "c"
     }
 }
