@@ -19,7 +19,7 @@ GPP=g++
 NSM=nasm
 FLAGC=-m32 -fno-stack-protector -c
 LDFLAG=-m elf_i386 -T link.ld -o $(KERNEL_BIN)
-LDPATH=kasm.o sound_blaster.o xq.o delay.o memfs.o uname.o wmsg.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
+LDPATH=kasm.o sound_blaster.o xq.o uptime.o xen.o delay.o get_sys_time.o nvmem.o atm.o ata.o bus.o cache.o accel.o gettime.o clear_screen.o memfs.o uname.o wmsg.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
 
 VG ?= std
 NET ?= user
@@ -48,14 +48,25 @@ compile:
 	
 	$(CC) $(FLAGC) kernel.c -o kc.o
 	$(CC) $(FLAGC) fs/text_draw.c -o textdraw.o
+	$(CC) $(FLAGC) include/drivers/atm/atm.c -o atm.o
+	$(CC) $(FLAGC) include/drivers/ata/ata.c -o ata.o
+	$(CC) $(FLAGC) include/drivers/cache/cache.c -o cache.o
+	$(CC) $(FLAGC) include/drivers/bus/bus.c -o bus.o
+	$(CC) $(FLAGC) fs/clear_screen.c -o clear_screen.o
+	$(CC) $(FLAGC) include/drivers/nvmem/nvmem.c -o nvmem.o
 	$(CC) $(FLAGC) fs/k_printf.c -o k_print.o
 	$(CC) $(FLAGC) include/wlcm/wmsg.c -o wmsg.o
+	$(CC) $(FLAGC) include/drivers/xen/xen.c -o xen.o
 	$(CC) $(FLAGC) include/bear/module.c -o module.o
+	$(CC) $(FLAGC) include/time/get_time.c -o gettime.o
 	$(CC) $(FLAGC) include/bear/notify/notification_system.c -o notify.o
 	$(CC) $(FLAGC) include/wlcm/crw.c -o crw.o
 	$(CC) $(FLAGC) include/delay/delay.c -o delay.o
+	$(CC) $(FLAGC) include/get_sys_time.c -o get_sys_time.o
+	$(CC) $(FLAGC) include/drivers/accel/accel.c -o accel.o
 	$(CC) $(FLAGC) reboot.c -o reboot.o
 	$(CC) $(FLAGC) include/uname.c -o uname.o
+	$(CC) $(FLAGC) include/time/uptime.c -o uptime.o
 	$(CC) $(FLAGC) shutdown.c -o shutdown.o
 	$(CC) $(FLAGC) panic/panic.c -o panic.o
 	$(CC) $(FLAGC) include/drivers/vesa/vesa.c -o vesa.o
@@ -118,7 +129,7 @@ recompiled:
 
 
 gdb: compile
-	gdb ./kernel.efl
+	gdb ./kernel
 
 
 

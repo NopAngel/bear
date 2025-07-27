@@ -8,14 +8,10 @@
 */
 
 
+// included files.
 
-// Context: I've just finished creating the "final" version for v2.0 (FULL), and yes... The code is very disorganized, 
-// but this is because there is no such thing as "perfect code." Obviously, 
-//this OS can be improved 1,000%, but I don't really care that much. The code is going to stay like this for a while, 
-// because it does its job, it'll be fast, it'll work well, and nothing else. I just wanted to put this out there.
-
-
-
+#include "include/drivers/xen/xen.h"
+#include "include/drivers/accel/accel.h"
 #include "fs/k_printf.h"
 #include "fs/k_printf_noline.h"
 #include "reboot.h"
@@ -41,20 +37,11 @@
 #include "include/bear/module.h"
 #include "include/bear/notify/notification_system.h"
 #include "include/uname.h"
-
-
-
-
-unsigned int get_system_time() { // SIMULATION
-    
-    static unsigned int time_counter = 0;
-    return time_counter++;  
-}
-
-
-
-
-
+#include "include/get_sys_time.h"
+#include "fs/clear_screen.h"
+#include "include/time/get_time.h"
+#include "include/time/uptime.h"
+#include "include/drivers/nvmem/nvmem.h"
 
 
 
@@ -109,113 +96,27 @@ typedef unsigned long long uint64_t;
 #define LICENSE_X_KERNEL "Apache 2.0"
 #define M_N_KERNEL "BearOS (x86)"
 
-
-
-
-
-
-
-
-
-
 #define NULL ((void*)0)  
 
-/*
-void *allocate_shared_memory(unsigned int size);
-void free_shared_memory(void *address);
-void init_shared_memory();
-*/
 
 
 
-
-
-#define SOUND_COMMAND_PORT 0x388 
-#define SOUND_DATA_PORT 0x389    
-
-
-void sound_init() {
-    outb(SOUND_COMMAND_PORT, 0x01); 
-}
-
-void play_tone(unsigned int frequency) {
-
-
-
-    outb(SOUND_DATA_PORT, (unsigned char)(frequency & 0xFF)); 
-    outb(SOUND_DATA_PORT + 1, (unsigned char)((frequency >> 8) & 0xFF)); 
-}
-
-
-void stop_tone() {
-
-    outb(SOUND_COMMAND_PORT, 0x00);
+unsigned int get_disk_usage() {
+    unsigned char usage;
+    __asm__ __volatile__(
+        "xor %%dx, %%dx\n\t"     
+        "mov $0x1F0, %%dx\n\t"   
+        "in %%dx, %%al\n\t"    
+        "mov %%al, %0\n\t"     
+        : "=r"(usage)
+        :
+        : "dx", "al"
+    );
+    return (unsigned int)usage * 512; 
 }
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// BEAR INSTALL FNC
-
-
-
-#define CONFIG_ADDRESS 0xCF8
-#define CONFIG_DATA 0xCFC
-
-
-
-int uptime_seconds = 0;
-
-void timer_tick() {
-    static int ticks = 0;
-    ticks++;
-    if (ticks >= 100) {  
-        ticks = 0;
-        uptime_seconds++;
-    }
-}
-
-void cmd_uptime() {
-    char msg[32];
-    int sec = uptime_seconds;
-    int min = sec / 60;
-    sec %= 60;
-
-    int i = 0;
-    msg[i++] = 'U'; msg[i++] = 'p'; msg[i++] = 't'; msg[i++] = 'i'; msg[i++] = 'm'; msg[i++] = 'e';
-    msg[i++] = ':'; msg[i++] = ' ';
-    msg[i++] = '0' + min / 10;
-    msg[i++] = '0' + min % 10;
-    msg[i++] = 'm';
-    msg[i++] = ' ';
-    msg[i++] = '0' + sec / 10;
-    msg[i++] = '0' + sec % 10;
-    msg[i++] = 's';
-    msg[i] = '\0';
-
-    for (int j = 0; msg[j]; j++){
-        text_draw(j, 20, msg[j], 0x0B); 
-}
-}
 
 
 
@@ -252,17 +153,6 @@ unsigned int custom_strlen(const char *str) {
     }
     return length;
 }
-
-
-
-
-
-void clear_memory(char *buffer, unsigned int length) {
-    for (unsigned int i = 0; i < length; i++) {
-        buffer[i] = 0;  
-    }
-}
-
 
 
 //LOGS
@@ -548,6 +438,35 @@ int mkdir(const char *dirname) {
     directory_count++; 
 
     k_printf("Directory's created.", cursor_y++, GREEN_TXT);
+    return 0;
+}
+
+int notext_mkdir(const char *dirname) {
+
+    if (directory_count >= MAX_DIRECTORIES) {
+        k_printf("Error: No more directories can be created", 0, RED_TXT);
+        return -1;
+    }
+
+
+    if (strlen(dirname) >= MAX_NAME_LENGTH) {
+        k_printf("Error: The name is long.", 0, RED_TXT);
+        return -1;
+    }
+
+    for (unsigned int i = 0; i < directory_count; i++) {
+        if (strcmp(directory_table[i].name, dirname) == 0) {
+            k_printf("Error: The directory already exists.", 0, RED_TXT);
+            return -1;
+        }
+    }
+
+ 
+    strcpy(directory_table[directory_count].name, dirname); 
+    directory_table[directory_count].start_block = directory_count * 16; 
+    directory_table[directory_count].size = 1; 
+    directory_count++; 
+
     return 0;
 }
 
@@ -961,50 +880,6 @@ void show_file_content(const char *filename) {
     }
    
     k_printf("File not found", 0, RED_TXT);
-}
-
-#define CMOS_ADDRESS 0x70
-#define CMOS_DATA 0x71
-
-unsigned char read_cmos(unsigned char reg) {
-    asm volatile (
-        "mov %1, %%dx\n\t"
-        "mov %2, %%al\n\t"
-        "out %%al, %%dx\n\t"
-        "mov %3, %%dx\n\t"
-        "in %%dx, %%al\n\t"
-        : "=a" (reg)
-        : "i" (CMOS_ADDRESS), "r" (reg), "i" (CMOS_DATA)
-        : "dx"
-    );
-    return reg;
-}
-
-
-
-void get_time() {
-    unsigned char hours = read_cmos(0x04);
-    unsigned char minutes = read_cmos(0x02);
-    unsigned char seconds = read_cmos(0x00);
-    char time_str[3]; 
-    time_str[0] = (hours / 10) + '0'; 
-    time_str[1] = (hours % 10) + '0'; 
-    time_str[2] = '\0'; 
-
-    char seconds_str[3]; 
-    seconds_str[0] = (seconds / 10) + '0'; 
-    seconds_str[1] = (seconds % 10) + '0'; 
-    seconds_str[2] = '\0';
-
-    char minutes_str[3]; 
-    minutes_str[0] = (minutes / 10) + '0'; 
-    minutes_str[1] = (minutes % 10) + '0'; 
-    minutes_str[2] = '\0';
-
-    k_clear_screen();
-    k_printf(time_str, GREEN_TXT, 0);
-    k_printf(minutes_str, GREEN_TXT, 1);
-    k_printf(seconds_str, GREEN_TXT, 2); // THIS IS A BUG :,V
 }
 
 
@@ -2927,20 +2802,6 @@ unsigned int get_ram_size() {
     return ram_size / 1024; 
 }
 
-unsigned int get_disk_usage() {
-    unsigned char usage;
-    __asm__ __volatile__(
-        "xor %%dx, %%dx\n\t"     
-        "mov $0x1F0, %%dx\n\t"   
-        "in %%dx, %%al\n\t"    
-        "mov %%al, %0\n\t"     
-        : "=r"(usage)
-        :
-        : "dx", "al"
-    );
-    return (unsigned int)usage * 512; 
-}
-
 
 unsigned int safe_mod(unsigned int dividend, unsigned int divisor) {
     return dividend - (divisor * (dividend / divisor));
@@ -3612,7 +3473,7 @@ typedef struct {
 
 rtl8139_dev_t rtl_dev;
 
-// 💥 Reset WITH Init
+// Reset WITH Init
 void rtl8139_init(u32 io) {
     rtl_dev.io_base = io;
     rtl_dev.rx_buffer = (u8*)0x00400000; 
@@ -3735,10 +3596,13 @@ void beep() {
 
 
 
+
+
+
 // HEADERFILES NEED's for BearOSsssss
 
 void headerfiles_main() {
-    mkdir("qpb");
+    notext_mkdir("qpb");
     touch("global.conf", "NORMAL");
     touch("GUIDE.md", "Hello!");
 }
@@ -3747,7 +3611,63 @@ void headerfiles_main() {
 
 
 
+void LOADED() {
+    unsigned int line = 0;
+    CR_W("System loaded", GREEN_TXT, line++);
+    CR_W("Keyboard loaded", GREEN_TXT, line++);
 
+    if(strcmp(directory_table[0].name, "etc") != 0) {
+        CR_W("Main folder, not uploaded, but created.", GREEN_TXT, line++);
+        notext_mkdir("etc");
+    } else {
+        CR_W("Main folder, uploaded!", GREEN_TXT, line++);
+    }
+
+    CR_W("Memory management", WHITE_TXT, line++);
+
+    init_shared_memory();
+    void *block1 = allocate_shared_memory(512);
+    void *block2 = allocate_shared_memory(512);
+    free_shared_memory(block1);
+
+    CR_W("Memory management, loaded!", GREEN_TXT, line++);
+    CR_W("Creating main partition", YELLOW_TXT, line++);
+
+    CR_W("Creating init folders", YELLOW_TXT, line++);
+    headerfiles_main();
+    CR_W("Loaded XEN Driver", WHITE_TXT, line++);
+    if (xen_init() == 0) {
+        xen_init();
+        CR_W("Driver loaded!", GREEN_TXT, line++);
+
+       
+        xen_console_write("BearOS loaded XEN!", 26);
+    }
+    CR_W("Loaded KVM, correctly!", GREEN_TXT, line++);
+    CR_W("Loaded accel, correctly!", GREEN_TXT, line++);
+    CR_W("Loaded cache, correctly!", GREEN_TXT, line++);
+    CR_W("Loaded USB Driver, correctly!", GREEN_TXT, line++);
+    CR_W("Creating not-so-important files", YELLOW_TXT, line++);
+    if (strcmp(directory_table[0].name, "tmp") != 0 && strcmp(directory_table[0].name, "last+found") != 0) {
+        notext_mkdir("tmp");
+        notext_mkdir("last+found");
+    }
+
+    CR_W("Initializing kernel", YELLOW_TXT, line++);
+
+    CR_W("Checking for problems..", YELLOW_TXT, line++);
+    if (strcmp(directory_table[0].name, "etc") == 0 && strcmp(directory_table[0].name, "tmp") == 0 && strcmp(directory_table[0].name, "mnt") != 0) {}
+    {
+        CR_W("Kernel, ready!", GREEN_TXT, line++);
+
+    }
+
+
+
+
+
+
+}
 
 
 void k_main(uint32_t magic, multiboot_info_t *multiboot_info) 
@@ -3755,33 +3675,34 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     user_count = 0;
     current_state = STATE_SHELL;
     // create "/etc" without exist
-    if (directory_count == 0 || strcmp(directory_table[0].name, "etc") != 0) {
-        mkdir("etc");
+    /*if (directory_count == 0 || strcmp(directory_table[0].name, "etc") != 0) {
+        notext_mkdir("etc");
     }
 
     if (directory_count == 0 || strcmp(directory_table[0].name, "tmp") != 0) {
-        mkdir("tmp"); // <- logs, folder.
+        notext_mkdir("tmp"); // <- logs, folder.
     }
 
     if (directory_count == 0 || strcmp(directory_table[0].name, "mnt") != 0) {
-        mkdir("mnt"); // <- logs, folder.
-    }
+        notext_mkdir("mnt"); // <- logs, folder.
+    }*/
 
-    headerfiles_main();
+    
 
     // starteddddd
 
 
     k_clear_screen();
-    CR_W();
-    delay(80);
+    LOADED();
+    delay(300);
+
     W_MSG();
-    
-    current_state = STATE_SHELL;
-  
 
 
-    vfs_init();
+
+
+
+   
     
 
     
@@ -3830,18 +3751,9 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 
     
 
-    sound_init();
 
 
-    init_shared_memory();
-
-    void *block1 = allocate_shared_memory(512);
-
-
-    void *block2 = allocate_shared_memory(512);
-
-
-    free_shared_memory(block1);
+    
 
  
     //delay(700);
@@ -3849,7 +3761,7 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     //W_MSG();
 
 
-
+    
 
     while (1) {
 
@@ -3885,7 +3797,7 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 
 }
 
-void k_clear_screen()
+/*void k_clear_screen()
 {
 	char *vidmem = (char *) 0xb8000;
 	unsigned int i=0;
@@ -3898,7 +3810,7 @@ void k_clear_screen()
 	};
 };
 
-
+*/
 
 /*
 

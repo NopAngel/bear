@@ -1,3 +1,6 @@
+#define WHITE_TXT 0x07
+
+
 void k_clear_screen()
 {
 	char *vidmem = (char *) 0xb8000;

@@ -40,3 +40,9 @@ void free_shared_memory(void *address) {
     }
 }
 
+
+void clear_memory(char *buffer, unsigned int length) {
+    for (unsigned int i = 0; i < length; i++) {
+        buffer[i] = 0;  
+    }
+}
