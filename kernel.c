@@ -42,6 +42,8 @@
 #include "include/time/get_time.h"
 #include "include/time/uptime.h"
 #include "include/drivers/nvmem/nvmem.h"
+#include "include/bear/INFO_H.h"
+#include "include/type.h"
 
 
 
@@ -80,46 +82,11 @@ static inline unsigned char inb(unsigned short port) {
 
 
 
-
-void set_background_color(const char *color_name);
-unsigned int k_printf(char *message, unsigned int line, unsigned int color);
 unsigned int k_printf_center(char *message, unsigned int line, unsigned int color);
+void set_background_color(const char *color_name);
 
-
-typedef unsigned char uint8_t;  
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;  
-typedef unsigned long long uint64_t; 
-
-#define KERNEL_M_ALPHA_NAME "BearX"
-#define AUTHOR_X_KERNEL "NopAngel (Angel Nieto)"
-#define LICENSE_X_KERNEL "Apache 2.0"
-#define M_N_KERNEL "BearOS (x86)"
 
 #define NULL ((void*)0)  
-
-
-
-
-unsigned int get_disk_usage() {
-    unsigned char usage;
-    __asm__ __volatile__(
-        "xor %%dx, %%dx\n\t"     
-        "mov $0x1F0, %%dx\n\t"   
-        "in %%dx, %%al\n\t"    
-        "mov %%al, %0\n\t"     
-        : "=r"(usage)
-        :
-        : "dx", "al"
-    );
-    return (unsigned int)usage * 512; 
-}
-
-
-
-
-
-
 
 
 
@@ -2797,42 +2764,6 @@ void vfs_list_mountpoints() {
 
 
 
-unsigned int get_ram_size() {
-    unsigned int ram_size = 0x100000; 
-    return ram_size / 1024; 
-}
-
-
-unsigned int safe_mod(unsigned int dividend, unsigned int divisor) {
-    return dividend - (divisor * (dividend / divisor));
-}
-
-
-
-void display_stats() {
-    char buffer[32];
-    unsigned int cpu_cycles = get_cpu_cycles();
-    unsigned int ram_usage = get_ram_size(); 
-    unsigned int disk_usage = get_disk_usage();
-    k_printf("MORE INFORMATION                                                                          ", cursor_y++, GREEN_BG_BLACK);
-
-    k_printf("CPU Cycles:", cursor_y++, ORANGE_TXT);
-    itoa(cpu_cycles, buffer, 10);
-    k_printf(buffer, cursor_y++, AQUA_TXT);
-
-    k_printf("RAM Usage (MB):", cursor_y++, GREEN_TXT);
-    itoa(ram_usage, buffer, 10);
-    k_printf(buffer, cursor_y++, AQUA_TXT);
-
-    k_printf("Disk Usage (MB):", cursor_y++, BLUE_TXT);
-    itoa(disk_usage, buffer, 10);
-    k_printf(buffer, cursor_y++, AQUA_TXT);
-
-    k_printf_center("Writting for exit", 21, WHITE_TXT);
-}
-
-
-
 
 
 
@@ -3118,8 +3049,6 @@ else if (strcmp(input_buffer, "sniff") == 0) {
   
 
     else if (strcmp(input_buffer, "stats") == 0) {
-    	k_clear_screen();
-    	cursor_y = 0;
         display_stats();
     	
     } else if(strcmp(input_buffer, "time") == 0) {
@@ -3637,11 +3566,11 @@ void LOADED() {
     headerfiles_main();
     CR_W("Loaded XEN Driver", WHITE_TXT, line++);
     if (xen_init() == 0) {
-        xen_init();
+        xen_init(line++);
         CR_W("Driver loaded!", GREEN_TXT, line++);
 
        
-        xen_console_write("BearOS loaded XEN!", 26);
+        xen_console_write("BearOS loaded XEN!", line++);
     }
     CR_W("Loaded KVM, correctly!", GREEN_TXT, line++);
     CR_W("Loaded accel, correctly!", GREEN_TXT, line++);
@@ -3656,10 +3585,8 @@ void LOADED() {
     CR_W("Initializing kernel", YELLOW_TXT, line++);
 
     CR_W("Checking for problems..", YELLOW_TXT, line++);
-    if (strcmp(directory_table[0].name, "etc") == 0 && strcmp(directory_table[0].name, "tmp") == 0 && strcmp(directory_table[0].name, "mnt") != 0) {}
-    {
-        CR_W("Kernel, ready!", GREEN_TXT, line++);
-
+    if (strcmp(directory_table[0].name, "etc") == 0 && strcmp(directory_table[0].name, "tmp") == 0 && strcmp(directory_table[0].name, "mnt") != 0) {
+         CR_W("Kernel, ready!", GREEN_TXT, line++);
     }
 
 
@@ -3690,7 +3617,6 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     
 
     // starteddddd
-
 
     k_clear_screen();
     LOADED();

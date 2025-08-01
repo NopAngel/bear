@@ -19,7 +19,7 @@ GPP=g++
 NSM=nasm
 FLAGC=-m32 -fno-stack-protector -c
 LDFLAG=-m elf_i386 -T link.ld -o $(KERNEL_BIN)
-LDPATH=kasm.o sound_blaster.o xq.o uptime.o xen.o delay.o get_sys_time.o nvmem.o atm.o ata.o bus.o cache.o accel.o gettime.o clear_screen.o memfs.o uname.o wmsg.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
+LDPATH=kasm.o sound_blaster.o xq.o uptime.o xen.o delay.o get_sys_time.o stats.o nvmem.o atm.o ata.o bus.o cache.o accel.o gettime.o clear_screen.o memfs.o uname.o wmsg.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
 
 VG ?= std
 NET ?= user
@@ -51,6 +51,7 @@ compile:
 	$(CC) $(FLAGC) include/drivers/atm/atm.c -o atm.o
 	$(CC) $(FLAGC) include/drivers/ata/ata.c -o ata.o
 	$(CC) $(FLAGC) include/drivers/cache/cache.c -o cache.o
+	$(CC) $(FLAGC) include/stats/stats.c -o stats.o
 	$(CC) $(FLAGC) include/drivers/bus/bus.c -o bus.o
 	$(CC) $(FLAGC) fs/clear_screen.c -o clear_screen.o
 	$(CC) $(FLAGC) include/drivers/nvmem/nvmem.c -o nvmem.o
@@ -81,6 +82,8 @@ compile:
 	$(CC) $(FLAGC) fs/k_printf_xy.c -o krpzq.o
 	$(CC) $(FLAGC) include/io/global.c -o globalll.o
 	ld $(LDFLAG) $(LDPATH)
+
+
 iso: compile
 	mkdir -p $(GRUB_FODLER)
 	cp $(KERNEL_BIN) ./iso/boot/

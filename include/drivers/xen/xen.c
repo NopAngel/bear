@@ -24,15 +24,15 @@ static inline unsigned long xen_hypercall_asm(
     return result;
 }
 
-int xen_init() {
+int xen_init(int line) {
 
     const char *xen_signature = (const char *)0x100000;
     if (xen_signature[0] != 'X' || xen_signature[1] != 'e' || xen_signature[2] != 'n') {
-        k_printf("Xen: Not found hypervisor!", 19, RED_TXT);
+        k_printf("Xen: Not found hypervisor!", line++, RED_TXT);
         return -1;
     }
 
-    k_printf("Xen: hypervisor detected!", 0, GREEN_TXT);
+    k_printf("Xen: hypervisor detected!", line++, GREEN_TXT);
     return 0;
 }
 

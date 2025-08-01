@@ -1,21 +1,11 @@
 {
-    "makefile.launchConfigurations": [
-        {
-            "cwd": "/media/angel/Disco 2/Work/bear",
-            "binaryPath": "/media/angel/Disco 2/Work/bear/kernel",
-            "binaryArgs": []
-        }
-    ],
     "files.associations": {
-        "typeinfo": "c",
-        "vesa.h": "c",
-        "info.h": "c",
-        "module.h": "c",
-        "manager.h": "c",
-        "tvfs.h": "c",
-        "clear_screen.h": "c",
-        "k_printf.h": "c",
-        "uname.h": "c",
-        "notification_system.h": "c"
+        "nvmem.h": "c",
+        "info_h.h": "c",
+        "get_time.h": "c",
+        "reboot.h": "c",
+        "global.h": "c",
+        "panic.h": "c",
+        "text_draw.h": "c"
     }
 }
