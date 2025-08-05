@@ -6,6 +6,8 @@
         "reboot.h": "c",
         "global.h": "c",
         "panic.h": "c",
-        "text_draw.h": "c"
+        "text_draw.h": "c",
+        "delay.h": "c",
+        "itoa.h": "c"
     }
 }

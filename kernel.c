@@ -14,9 +14,9 @@
 #include "include/drivers/accel/accel.h"
 #include "fs/k_printf.h"
 #include "fs/k_printf_noline.h"
-#include "reboot.h"
+#include "include/sys/reboot.h"
 #include "include/multiboot.h"
-#include "shutdown.h"
+#include "include/sys/shutdown.h"
 #include "include/itoa.h"
 #include "cpu/get_cpu_info.h"
 #include "include/memory/sharedmemory.h"
@@ -44,6 +44,8 @@
 #include "include/drivers/nvmem/nvmem.h"
 #include "include/bear/INFO_H.h"
 #include "include/type.h"
+#include "include/drivers/i2c/i2c.h"
+#include "include/drivers/i3c/i3c.h"
 
 
 
@@ -3601,21 +3603,8 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 {
     user_count = 0;
     current_state = STATE_SHELL;
-    // create "/etc" without exist
-    /*if (directory_count == 0 || strcmp(directory_table[0].name, "etc") != 0) {
-        notext_mkdir("etc");
-    }
-
-    if (directory_count == 0 || strcmp(directory_table[0].name, "tmp") != 0) {
-        notext_mkdir("tmp"); // <- logs, folder.
-    }
-
-    if (directory_count == 0 || strcmp(directory_table[0].name, "mnt") != 0) {
-        notext_mkdir("mnt"); // <- logs, folder.
-    }*/
 
     
-
     // starteddddd
 
     k_clear_screen();

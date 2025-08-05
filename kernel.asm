@@ -22,7 +22,7 @@ global load_idt
 global detect_v86
 
 load_idt:
-    lidt [eax]  ; Carga la IDT desde el puntero en EAX
+    lidt [eax]  ; load idtttttttttttttttttttt 
     ret
 
 detect_v86: 
