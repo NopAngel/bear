@@ -26,5 +26,7 @@ void bear_panic(const char *msg) {
         text_draw((i % 60) + 10, y, msg[i], 0x47); 
         if (i % 60 == 59) y++;
     }
-
+    while(1) {
+        __asm__ volatile ("hlt");
+    }
 }

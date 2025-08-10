@@ -65,7 +65,7 @@ compile:
 	$(CC) $(FLAGC) include/delay/delay.c -o delay.o
 	$(CC) $(FLAGC) include/get_sys_time.c -o get_sys_time.o
 	$(CC) $(FLAGC) include/drivers/accel/accel.c -o accel.o
-	$(CC) $(FLAGC) include/sys/reboot.c -o reboot.o
+	$(CC) $(FLAGC) apm/reboot.c -o reboot.o
 	$(CC) $(FLAGC) include/uname.c -o uname.o
 	$(CC) $(FLAGC) include/time/uptime.c -o uptime.o
 	$(CC) $(FLAGC) include/sys/shutdown.c -o shutdown.o

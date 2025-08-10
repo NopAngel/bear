@@ -14,7 +14,7 @@
 #include "include/drivers/accel/accel.h"
 #include "fs/k_printf.h"
 #include "fs/k_printf_noline.h"
-#include "include/sys/reboot.h"
+#include "apm/reboot.h"
 #include "include/multiboot.h"
 #include "include/sys/shutdown.h"
 #include "include/itoa.h"
@@ -1434,20 +1434,7 @@ void furvision(unsigned int mode_index) {
     k_printf(vision_modes[mode_index].mode, 7, 0x0E);
 }
 
-void denreboot() {
-    k_printf("Reset BearOS...", 10, 0x0C);
-    k_printf("Save data...", 11, 0x0C);
 
-    for (int i = 0; i < 100000; i++) { asm volatile("nop"); }
-
-
-    asm volatile (
-        "cli;"           
-        "movb $0xFE, %al;" 
-        "outb %al, $0x64;" 
-        "hlt;"             
-    );
-}
 
 int check_memory_error(unsigned int addr);
 void repair_memory(unsigned int addr);
@@ -2923,7 +2910,10 @@ void process_input() {
         k_clear_screen();
         const char *filename = input_buffer + 6;
         qbear(filename);
-}
+    }
+    else if (strncmp(input_buffer, "reboot", 0) == 0) {
+        reboot_system();
+    }
 
     else if (strcmp(input_buffer, "cdback") == 0) {
         cd_back();
@@ -3574,7 +3564,7 @@ void LOADED() {
        
         xen_console_write("BearOS loaded XEN!", line++);
     }
-    CR_W("Loaded KVM, correctly!", GREEN_TXT, line++);
+    CR_W("Loaded KVM, correctly!", GREEN_TXT, line++); // y sí, kvm carga al iniciar, y si tendría error, lanzaría al iniciar o hasta al compilar :v
     CR_W("Loaded accel, correctly!", GREEN_TXT, line++);
     CR_W("Loaded cache, correctly!", GREEN_TXT, line++);
     CR_W("Loaded USB Driver, correctly!", GREEN_TXT, line++);
@@ -3612,7 +3602,7 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     delay(300);
 
     W_MSG();
-
+    
 
 
 

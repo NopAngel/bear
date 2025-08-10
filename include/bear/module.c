@@ -15,7 +15,7 @@ void register_module(Module* module) {
         module->init();
     }
 
-    k_printf("Módulo registrado: %s (v%d)\n", 30, 0x0A); 
+    k_printf("module register: %s (v%d)\n", 30, 0x0A); 
 }
 
 void unregister_module(const char* name) {
@@ -37,7 +37,7 @@ void unregister_module(const char* name) {
                 module_list = current->next;
             }
 
-            k_printf("Módulo eliminado: %s\n", 31, 0x0C);
+            k_printf("Module deleted: %s\n", 31, 0x0C);
             return;
         }
 
@@ -47,12 +47,12 @@ void unregister_module(const char* name) {
 }
 
 uint8_t load_module(const char* name) {
-    k_printf("Cargando módulo: %s\n", 32, 0x07);
+    k_printf("Loaded module: %s\n", 32, 0x07);
     return 1;
 }
 
 uint8_t unload_module(const char* name) {
-    k_printf("Descargando módulo: %s\n", 33, 0x07);
+    k_printf("Download module: %s\n", 33, 0x07);
     unregister_module(name);
     return 1;
 }
@@ -62,7 +62,7 @@ void list_modules() {
     Module* current = module_list;
     uint32_t index = 0;
 
-    k_printf("Módulos cargados:\n", 34, 0x07); // Línea 34
+    k_printf("Module listed:\n", 34, 0x07); // Línea 34
     while (current) {
         k_printf("%d. %s (v%d)\n", 35 + index, 0x07); // Línea incremental
         current = current->next;

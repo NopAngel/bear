@@ -1,44 +1,33 @@
+#include "../fs/k_printf.h"
+
 void reboot_system() {
-    // Deshabilitamos las interrupciones
+    
+    // func for reboot system
     __asm__ volatile("cli");
-
-    // Esperar que el buffer de salida del controlador esté vacío
-    while (1) {
-        unsigned char status;
-        __asm__ volatile (
-            "inb %1, %0"            // Leer el estado del puerto 0x64
-            : "=a"(status)          // El resultado se almacena en "status"
-            : "Nd"(0x64)            // Puerto de E/S 0x64
-        );
-        if ((status & 0x02) == 0) { // Verificar si el bit ocupado está en 0
-            break;
-        }
-    }
-
-    // Enviar el comando de reinicio al puerto 0x64
+    
     __asm__ volatile (
-        "outb %0, %1"              // Enviar un comando al puerto
-        :                          // No hay salida
-        : "a"((unsigned char)0xFE), "Nd"(0x64)  // Valor inmediato en %al, puerto 0x64
+        "mov $0x13, %ax\n"
+        "int $0x10\n"
+    ); // mode vga :)
+    
+    __asm__ volatile (
+        "ljmp $0xf000, $0xfff0"
     );
 
-    // Si el reinicio falla, mantener un bucle infinito
     while (1);
 }
 
-/*HOW TO USE? 
-else if (strcmp(input_buffer, "reboot") == 0) {
+void denreboot() {
+    k_printf("Reset BearOS...", 10, 0x0C);
+    k_printf("Save data...", 11, 0x0C);
 
-        __asm__ volatile (
-        "mov $0x13, %ax\n"  // Modo VGA 13h
-        "int $0x10\n"       // Interrupción del BIOS
+    for (int i = 0; i < 100000; i++) { asm volatile("nop"); }
+
+
+    asm volatile (
+        "cli;"           
+        "movb $0xFE, %al;" 
+        "outb %al, $0x64;" 
+        "hlt;"             
     );
-
-    // Simular algún escenario crítico y luego reiniciar
-    k_printf("Reiniciando el sistema en 5 segundos...", 1, RED_TXT);
-
-    // Esperar (simulada, por simplicidad)
-    for (volatile int i = 0; i < 50000000; i++) { }
-
-    reboot_system();    
-    }*/
+}
