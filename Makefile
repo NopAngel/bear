@@ -110,7 +110,7 @@ menuinstall:
 	$(PY) ./scripts/menuinstall.py
 
 rm_q: # remove all files (.iso, .o)
-	rm -rf *.o *.iso *.img kernel kernel.elf *.tmp 
+	@rm -rf *.o *.iso *.img kernel kernel.elf *.tmp 
 	@echo "Makefile> Deleted files trash!"
 
 
@@ -122,8 +122,8 @@ test:
 
 
 rebuild: rm_q
-	make compile
-	echo "Makefile> Rebuilding, complete!"
+	@make compile
+	@echo "Makefile> Rebuilding, complete!"
 
 
 recompiled:

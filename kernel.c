@@ -50,10 +50,158 @@
 
 
 unsigned int current_directory = 0;  // default root
-#define MAX_NAME_LENGTH 256
-#define MAX_CONTENT_LENGTH 1024
+
 int cursor_x = 0;   
 int cursor_y = 0; 
+#define MAX_FILES 100
+
+
+#define MAX_NAME_LENGTH 256
+#define MAX_CONTENT_LENGTH 1024
+typedef struct {
+    char name[MAX_NAME_LENGTH];    
+    unsigned int start_block;     
+    unsigned int size;             
+    char content[MAX_CONTENT_LENGTH];
+} FileEntry;
+
+unsigned int file_count = 0;
+FileEntry file_table[MAX_FILES];  
+
+#define MAX_PROMPT_LEN 100
+char hostname[32] = "bearos";
+
+#define SUPERBLOCK_MAGIC 0xBEAF1234
+#define NUM_INODES 256
+#define NUM_DATA_BLOCKS 1024
+#define BLOCK_SIZE 1024
+typedef struct {
+    uint32_t magic;
+    uint32_t inode_count;
+    uint32_t block_count;
+    uint32_t free_inodes;
+    uint32_t free_blocks;
+    uint32_t first_free_inode;
+    uint32_t first_free_block;
+} superblock_t;
+
+typedef struct {
+    uint32_t mode;
+    uint32_t size;
+    uint32_t blocks[12];
+    uint32_t ctime;
+    uint32_t mtime;
+} inode_t;
+
+
+
+
+void mkfs() {
+    superblock_t sb;
+    sb.magic = SUPERBLOCK_MAGIC;
+    sb.inode_count = NUM_INODES;
+    sb.block_count = NUM_DATA_BLOCKS;
+    sb.free_inodes = NUM_INODES - 1;
+    sb.free_blocks = NUM_DATA_BLOCKS;
+    sb.first_free_inode = 1;
+    sb.first_free_block = 0;
+    
+    fs_write("/superblock", (char*)&sb, sizeof(superblock_t));
+    
+    inode_t root_inode;
+    root_inode.mode = 0x4000;  // directory
+    root_inode.size = 0;
+    root_inode.ctime = get_time();
+    root_inode.mtime = get_time();
+
+    for (int i = 0; i < 12; i++) {
+        root_inode.blocks[i] = 0;
+    }
+    
+    fs_write("/inodes/0", (char*)&root_inode, sizeof(inode_t));
+    
+    uint8_t inode_bitmap[NUM_INODES / 8];
+    for (int i = 0; i < sizeof(inode_bitmap); i++) {
+        inode_bitmap[i] = 0;
+    }
+    inode_bitmap[0] = 0x01;  
+
+    uint8_t block_bitmap[NUM_DATA_BLOCKS / 8];
+    for (int i = 0; i < sizeof(block_bitmap); i++) {
+        block_bitmap[i] = 0;
+    }
+    
+    fs_write("/inode_bitmap", (char*)inode_bitmap, sizeof(inode_bitmap));
+    fs_write("/block_bitmap", (char*)block_bitmap, sizeof(block_bitmap));
+    
+    k_printf("Filesystem created successfully!", cursor_y++, GREEN_TXT);
+}
+void e2fsck() {
+    superblock_t sb;
+    if (fs_read("/superblock", (char*)&sb, sizeof(sb)) != sizeof(sb)) {
+        k_printf("Error: Superblock missing", cursor_y++, RED_TXT);
+        return;
+    }
+    
+    if (sb.magic != SUPERBLOCK_MAGIC) {
+        k_printf("Error: Invalid magic number", cursor_y++, RED_TXT);
+        return;
+    }
+    
+    // verify 
+    uint8_t inode_bitmap[NUM_INODES / 8];
+    fs_read("/inode_bitmap", (char*)inode_bitmap, sizeof(inode_bitmap));
+    
+    int errors = 0;
+    for (int i = 0; i < NUM_INODES; i++) {
+        int byte_idx = i / 8;
+        int bit_mask = 1 << (i % 8);
+        
+        if (inode_bitmap[byte_idx] & bit_mask) {
+            char path[20];
+            itoa(i, path, 10);
+            strcat(path, "/inodes/");
+        
+            int exists = 0;
+            for (unsigned int j = 0; j < file_count; j++) {
+                if (strcmp(file_table[j].name, path) == 0) {
+                    exists = 1;
+                    break;
+                }
+            }
+            
+            if (!exists) {
+                char error_msg[50] = "Missing inode: ";
+                char num_str[10];
+                itoa(i, num_str, 10);
+                strcat(error_msg, num_str);
+                k_printf(error_msg, cursor_y++, RED_TXT);
+                errors++;
+            }
+        }
+    }
+    
+    if (errors == 0) {
+        k_printf("Filesystem is clean", cursor_y++, GREEN_TXT);
+    } else {
+        char msg[50];
+        itoa(errors, msg, 10);
+        strcat(msg, " errors found");
+        k_printf(msg, cursor_y++, ORANGE_TXT);
+    }
+}
+
+
+
+int file_exists(const char* path) {
+    for (unsigned int i = 0; i < file_count; i++) {
+        if (strcmp(file_table[i].name, path) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int input_index = 0;    
 
 
@@ -85,6 +233,7 @@ static inline unsigned char inb(unsigned short port) {
 
 
 unsigned int k_printf_center(char *message, unsigned int line, unsigned int color);
+void k_clear_line(unsigned int line);
 void set_background_color(const char *color_name);
 
 
@@ -97,17 +246,6 @@ volatile unsigned char current_bg_color = BLACK_BG;
 
 
 
-#define MAX_FILES 100
-
-typedef struct {
-    char name[MAX_NAME_LENGTH];    
-    unsigned int start_block;     
-    unsigned int size;             
-    char content[MAX_CONTENT_LENGTH];
-} FileEntry;
-
-FileEntry file_table[MAX_FILES];  
-unsigned int file_count = 0;
 
 
 
@@ -552,8 +690,6 @@ void mc() {
 
 
 
-
-
 void update_file_content(const char *filename, const char *new_content) {
     for (unsigned int i = 0; i < file_count; i++) {
         if (custom_strcmp(file_table[i].name, filename) == 0) { 
@@ -811,6 +947,7 @@ int cd(const char *dirname) {
         if (current_directory != 0) {  
             current_directory = directory_table[current_directory].parent_dir;
             pwd();
+            
             return 0;
         }
         k_printf("Already at root", cursor_y++, RED_TXT);
@@ -2748,14 +2885,6 @@ void vfs_list_mountpoints() {
 
 
 
-
-
-
-
-
-
-
-
 /*
  *
  * how to use:
@@ -2871,6 +3000,13 @@ void process_input() {
         digrep(pattern, file);
     }
    
+    else if (strcmp(input_buffer, "mkfs") == 0) {
+        mkfs();
+    }
+    else if (strcmp(input_buffer, "e2fsck") == 0) {
+        e2fsck();
+    }
+   
     else if (strcmp(input_buffer, "mc") == 2) {
         mc();
     }
@@ -2911,7 +3047,11 @@ void process_input() {
         const char *filename = input_buffer + 6;
         qbear(filename);
     }
-    else if (strncmp(input_buffer, "reboot", 0) == 0) {
+    //else if (strncmp(input_buffer, "reboot", 0) == 0) {
+    //    reboot_system();
+   // }
+   //
+    else if (strcmp(input_buffer, "reboot") == 0) {
         reboot_system();
     }
 
@@ -3593,7 +3733,6 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
 {
     user_count = 0;
     current_state = STATE_SHELL;
-
     
     // starteddddd
 
@@ -3602,13 +3741,7 @@ void k_main(uint32_t magic, multiboot_info_t *multiboot_info)
     delay(300);
 
     W_MSG();
-    
 
-
-
-
-   
-    
 
     
 /*
@@ -3782,7 +3915,18 @@ unsigned int k_printf_center(char *message, unsigned int line, unsigned int colo
 }
 
 
-
+void k_clear_line(unsigned int line) {
+    char* vidmem = (char*)0xb8000;
+    unsigned int pos = line * 80 * 2;
+    
+    for (int i = 0; i < 80; i++) {
+        vidmem[pos + i * 2] = ' ';
+        vidmem[pos + i * 2 + 1] = current_bg_color;
+    }
+    
+    cursor_x = 0;
+    cursor_y = line;
+}
 
 
 /*
