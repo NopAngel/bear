@@ -155,20 +155,6 @@ endif
 
 
 
-GUIDE_RESOLUTION_COMPILED:
-	@clear
-	@echo ' 			Resolution:                           '
-	@echo ''
-	@echo ''
-	@echo '1.  Go to the "/iso/boot/grub" folder'
-	@echo '2.  Find the "grub.cfg" file, and replace the line "set gfxmode=640x480x32" with: "set gfxmode=<YOUR RESOLUTION>x<YOUR HZ>"'
-	@echo '3. Go to the main directory of "bear" and type "make compile && make iso"'
-	@echo 'Ready, you now have your ". iso" with the resolution!'
-	@echo '========================================================================'
-
-
-
-
 
 #										Test
 #	set timeout=5
@@ -187,54 +173,38 @@ GUIDE_RESOLUTION_COMPILED:
 #    boot
 #}
 
-
-
-GIT=git
-REPO=https://github.com/NopAngel/bear.git
-
-ifndef GIT
-	GIT := git
-endif
-
-PACKAGE=apt
-
-ifndef PACKAGE
-
-
-PACKAGE := apt
-
-
-ifndef PACKAGE
-
-
-PACKAGE := pacman
-
-
-ifndef PACKAGE
-
-
-
-
-
-PACKAGE := dnf
-
-
-
-
-endif
-
-
-
-endif
-
-
-
-endif
-
-
-prepared:
-	sudo $(PACKAGE) install aptitude && sudo aptitude install binutils make git nasm
-	$(GIT) (REPO) && cd bear
 	
 
+
+
+config:
+	$(PY) ./scripts/menuconfig.py
+
+
+
+
+# 🐻 Lista de módulos disponibles
+MODULES := SOUND_BLASTER VESA MOUSE_PS2 ACCELEROMETER
+
+# 🐾 Ruta base de drivers
+DRIVER_PATH := include/drivers
+
+# 🧠 Compilador y flags
+CC := gcc
+FLAGC := -m32 -ffreestanding -Wall
+
+# 🛠 Macro para compilar si está habilitado
+define compile_if_enabled
+ifeq ($(CONFIG_$(1)),y)
+    @echo "🔧 Compilando $(1)..."
+    $(CC) $(FLAGC) $(DRIVER_PATH)/$(call path_for,$(1)) -o $(call obj_for,$(1))
+endif
+endef
+
+# 🎯 Funciones auxiliares para rutas
+path_for = $(shell echo $(1) | tr A-Z a-z)/$(shell echo $(1) | tr A-Z a-z).c
+obj_for = $(shell echo $(1) | tr A-Z a-z).o
+
+# 🧩 Evaluar cada módulo
+$(foreach mod,$(MODULES),$(eval $(call compile_if_enabled,$(mod))))
 

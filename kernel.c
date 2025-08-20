@@ -757,7 +757,7 @@ void set_background_color(const char *color_name) {
     }
 }
 
-char* strcat(char *dest, const char *src) {
+/*char* strcat(char *dest, const char *src) {
     char *ptr = dest;
     
     // Find end of dest
@@ -771,7 +771,7 @@ char* strcat(char *dest, const char *src) {
     // Null terminate
     *ptr = '\0';
     return dest;
-}
+}*/
 
 
 
@@ -819,14 +819,14 @@ int strcspn(const char* str, const char* reject) {
     }
     return count;
 }
-
+/*
 char* strchr(const char* s, int c) {
     while (*s != (char)c) {
         if (*s == '\0') return NULL;
         s++;
     }
     return (char*)s;
-}
+}*/
 
 void process_script_line(char* line) {
    

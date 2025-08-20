@@ -27,3 +27,6 @@ kernel
 .vimpluggins
 .vimeditor
 
+
+# conf
+.bearconfig

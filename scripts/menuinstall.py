@@ -1,29 +1,22 @@
 import os
+import platform
 
-BLUE = '\033[44m'
-RED = '\033[31m'
-RESET = '\033[0m'
+print("🐻 BearOS Installer — Preparing your system")
 
-def install_select():
-    os.system("clear")
-    print(f"{BLUE}                   Instalation selector                                 ")
-    print(f"{BLUE}                                                                        ")
-    print(f"{BLUE}                                                                        ")
-    print(f"{BLUE}'qb_x': compile kernel and ruuning with qemu                            ")
-    print(f"{BLUE}'qb_p': compile in iso                                                  ")
-    print(f"{BLUE}'qb_1s': install programs need                                          ")
-    print(f"{BLUE}                                                                        ")
-    print(f"{BLUE}                                                                        {RESET}")
-    prompt = input(">")
-    if prompt == "qb_x":
-        os.system("make compile && make run")
-    elif prompt == "qb_p":
-        os.system("make compile && make iso")
-    else:
-        os.system("clear")
-        print(f"{RED}ERR BearInstall:{RESET}  Command not found!")
+pkg_managers = {
+    "Debian": "apt",
+    "Arch": "pacman",
+    "Fedora": "dnf"
+}
 
+system = platform.system()
+distro = platform.linux_distribution()[0] if hasattr(platform, "linux_distribution") else "Unknown"
 
-    
-install_select()
+pkg = pkg_managers.get(distro, "apt")
+
+print(f"Detected distro: {distro}")
+print(f"Using package manager: {pkg}")
+
+os.system(f"sudo {pkg} install make gcc g++ nasm python3 -y")
+print("✅ Environment ready. You may now run: make menuconfig && make compile")
 
