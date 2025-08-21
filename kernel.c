@@ -46,6 +46,9 @@
 #include "include/type.h"
 #include "include/drivers/i2c/i2c.h"
 #include "include/drivers/i3c/i3c.h"
+#include "include/lang/compile.h"
+#include "include/drivers/soundwire/soundwire.h"
+
 
 
 
@@ -757,7 +760,7 @@ void set_background_color(const char *color_name) {
     }
 }
 
-/*char* strcat(char *dest, const char *src) {
+char* strcat(char *dest, const char *src) {
     char *ptr = dest;
     
     // Find end of dest
@@ -771,7 +774,7 @@ void set_background_color(const char *color_name) {
     // Null terminate
     *ptr = '\0';
     return dest;
-}*/
+}
 
 
 
@@ -819,14 +822,14 @@ int strcspn(const char* str, const char* reject) {
     }
     return count;
 }
-/*
+
 char* strchr(const char* s, int c) {
     while (*s != (char)c) {
         if (*s == '\0') return NULL;
         s++;
     }
     return (char*)s;
-}*/
+}
 
 void process_script_line(char* line) {
    
@@ -2972,6 +2975,33 @@ void process_input() {
         const char *filename = input_buffer + 5;
         tail(filename);
     }
+    else if (strcmp(input_buffer, "sound init") == 0) {
+    soundwire_init();
+    soundwire_setup();
+}
+else if (strcmp(input_buffer, "sound beep") == 0) {
+    soundwire_beep();
+}
+else if (strcmp(input_buffer, "sound test") == 0) {
+    soundwire_test();
+}
+else if (strcmp(input_buffer, "sound test") == 0) {
+    char* freq_str = input_buffer + 11;
+    unsigned int freq = 0;
+    
+    while (*freq_str >= '0' && *freq_str <= '9') {
+        freq = freq * 10 + (*freq_str - '0');
+        freq_str++;
+    }
+    
+    soundwire_play_tone(freq, 2);
+    
+    k_printf("Playing tone: ", cursor_y++, 0x0F);
+    char freq_disp[16];
+    itoa(freq, freq_disp, 10);
+    k_printf(freq_disp, cursor_y++, 0x0F);
+    k_printf("Hz", cursor_y++, 0x0F);
+}
     else if (strncmp(input_buffer, "head ", 5) == 0) {
         const char *filename = input_buffer + 5;
         head(filename);
@@ -2989,6 +3019,7 @@ void process_input() {
     else if (strncmp(input_buffer, "beardog install ", 16) == 0) {
         beardog_install(input_buffer + 16);
     }
+   
     else if (strncmp(input_buffer, "mv ", 3) == 0) {
         char src[50], dest[50];
         parse_two_args(input_buffer + 3, src, dest);
@@ -3946,7 +3977,6 @@ void W_MSG(){
 
 
 }*/
-
 
 
 

@@ -19,7 +19,7 @@ GPP=g++
 NSM=nasm
 FLAGC=-m32 -fno-stack-protector -c
 LDFLAG=-m elf_i386 -T link.ld -o $(KERNEL_BIN)
-LDPATH=kasm.o sound_blaster.o xq.o i2c.o i3c.o uptime.o xen.o delay.o get_sys_time.o stats.o nvmem.o atm.o ata.o bus.o cache.o accel.o gettime.o clear_screen.o memfs.o uname.o wmsg.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
+LDPATH=kasm.o sound_blaster.o xq.o i2c.o i3c.o uptime.o xen.o delay.o get_sys_time.o stats.o nvmem.o soundwire.o atm.o ata.o bus.o cache.o accel.o gettime.o clear_screen.o memfs.o uname.o wmsg.o crw.o textdraw.o pnp.o kc.o  k_print.o notify.o reboot.o module.o shutdown.o drv.o rtc.o panic.o vesa.o itoa.o cpu_info.o sharedmemory.o mouse.o krpp.o krpzq.o globalll.o
 
 VG ?= std
 NET ?= user
@@ -60,6 +60,7 @@ compile:
 	$(CC) $(FLAGC) include/drivers/xen/xen.c -o xen.o
 	$(CC) $(FLAGC) include/bear/module.c -o module.o
 	$(CC) $(FLAGC) include/time/get_time.c -o gettime.o
+	$(CC) $(FLAGC) include/drivers/soundwire/soundwire.c -o soundwire.o
 	$(CC) $(FLAGC) include/bear/notify/notification_system.c -o notify.o
 	$(CC) $(FLAGC) include/wlcm/crw.c -o crw.o
 	$(CC) $(FLAGC) include/delay/delay.c -o delay.o
@@ -155,6 +156,20 @@ endif
 
 
 
+GUIDE_RESOLUTION_COMPILED:
+	@clear
+	@echo ' 			Resolution:                           '
+	@echo ''
+	@echo ''
+	@echo '1.  Go to the "/iso/boot/grub" folder'
+	@echo '2.  Find the "grub.cfg" file, and replace the line "set gfxmode=640x480x32" with: "set gfxmode=<YOUR RESOLUTION>x<YOUR HZ>"'
+	@echo '3. Go to the main directory of "bear" and type "make compile && make iso"'
+	@echo 'Ready, you now have your ". iso" with the resolution!'
+	@echo '========================================================================'
+
+
+
+
 
 #										Test
 #	set timeout=5
@@ -173,38 +188,53 @@ endif
 #    boot
 #}
 
-	
 
 
+GIT=git
+REPO=https://github.com/NopAngel/bear.git
 
-config:
-	$(PY) ./scripts/menuconfig.py
-
-
-
-
-# 🐻 Lista de módulos disponibles
-MODULES := SOUND_BLASTER VESA MOUSE_PS2 ACCELEROMETER
-
-# 🐾 Ruta base de drivers
-DRIVER_PATH := include/drivers
-
-# 🧠 Compilador y flags
-CC := gcc
-FLAGC := -m32 -ffreestanding -Wall
-
-# 🛠 Macro para compilar si está habilitado
-define compile_if_enabled
-ifeq ($(CONFIG_$(1)),y)
-    @echo "🔧 Compilando $(1)..."
-    $(CC) $(FLAGC) $(DRIVER_PATH)/$(call path_for,$(1)) -o $(call obj_for,$(1))
+ifndef GIT
+	GIT := git
 endif
-endef
 
-# 🎯 Funciones auxiliares para rutas
-path_for = $(shell echo $(1) | tr A-Z a-z)/$(shell echo $(1) | tr A-Z a-z).c
-obj_for = $(shell echo $(1) | tr A-Z a-z).o
+PACKAGE=apt
 
-# 🧩 Evaluar cada módulo
-$(foreach mod,$(MODULES),$(eval $(call compile_if_enabled,$(mod))))
+ifndef PACKAGE
+
+
+PACKAGE := apt
+
+
+ifndef PACKAGE
+
+
+PACKAGE := pacman
+
+
+ifndef PACKAGE
+
+
+
+
+
+PACKAGE := dnf
+
+
+
+
+endif
+
+
+
+endif
+
+
+
+endif
+
+
+prepared:
+	sudo $(PACKAGE) install aptitude && sudo aptitude install binutils make git nasm
+	$(GIT) (REPO) && cd bear
+	
 
